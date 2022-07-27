@@ -1,9 +1,10 @@
-# Rx Operators for halogen-subscription
+# Paraglider makes it easier to explore Hyrule
 
-* A collection of functions that mimick Rx Operators and can be used to manipulate `Emitter` from `halogen-subscription`.
-* Few methods to help interop `Emitter` and `Aff`.
+Provides:
+* Collection of Rx-inpired Operators for [hyrule](https://github.com/mikesol/purescript-hyrule)'s FRP.Event and [halogen-subscriptions](https://github.com/purescript-halogen/purescript-halogen-subscriptions)'s Emitter
+* Few methods to help interop `Event` and `Aff`.
 
-Refer to Rx's documentation for the similar methods.
+Refer to Rx's documentation for the similar methods to understand the functionality (specially marble diagrams) 
 
 ### Rx Operators:
 ```
@@ -28,4 +29,5 @@ rxFromAff :: Aff ~> Emitter
 ```
 
 ### Examples
-Look at the `test/` folder for examples.
+Look at the [Event test](https://github.com/xvaldetaro/purescript-hyrule-paraglider/blob/main/test/Main.purs) for `FRP.Event` examples.
+Or Look at [Emitter test](https://github.com/xvaldetaro/purescript-hyrule-paraglider/blob/main/test/HaloSubTest.purs) for `Emitter` examples.
