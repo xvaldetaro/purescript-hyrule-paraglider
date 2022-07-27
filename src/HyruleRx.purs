@@ -13,12 +13,24 @@ import Effect.Aff (Aff, Canceler(..), Milliseconds(..), error, joinFiber, killFi
 import Effect.Class (liftEffect)
 import Effect.Ref as Ref
 import Effect.Timer (clearTimeout, setTimeout)
-import FRP.Event (Event, bang, folded, makeEvent, subscribe)
+import FRP.Event (Event, bang, makeEvent, subscribe)
 import FRP.Event as Event
 import FRP.Event.Class (biSampleOn, fold)
 import FRP.Event.Time as Event.Time
-import SubRef (SubRef, addSub, dispose)
+import Halogen.Subscription (Emitter, makeEmitter, unsubscribe)
+import Halogen.Subscription as Subscription
+import SubRef (addSub, dispose)
 import SubRef as SubRef
+
+fromHalo :: Emitter ~> Event
+fromHalo emitter = makeEvent \k -> do
+  sub <- Subscription.subscribe emitter k
+  pure $ unsubscribe sub
+
+toHalo :: Event ~> Emitter
+toHalo event = makeEmitter \k -> do
+  sub <- subscribe event k
+  pure $ sub
 
 -- if the cancelers cancels, theoretically we don't need to unsubscribe
 -- as nothing will be firing
