@@ -15,11 +15,16 @@ to generate this file without the comments in this block.
   [ "aff"
   , "arrays"
   , "console"
+  , "datetime"
   , "effect"
   , "either"
   , "exceptions"
+  , "filterable"
   , "foldable-traversable"
   , "halogen-subscriptions"
+  , "hyrule"
+  , "integers"
+  , "js-timers"
   , "maybe"
   , "prelude"
   , "refs"
@@ -27,5 +32,5 @@ to generate this file without the comments in this block.
   , "tuples"
   ]
 , packages = ./packages.dhall
-, sources = [ "src/**/*.purs", "test/**/*.purs" ]
+, sources = [ "src/**/*.purs" ]
 }
