@@ -3,6 +3,8 @@
 * A collection of functions that mimick Rx Operators and can be used to manipulate `Emitter` from `halogen-subscription`.
 * Few methods to help interop `Emitter` and `Aff`.
 
+Refer to Rx's documentation for the similar methods.
+
 ### Rx Operators:
 ```
 rxDelay :: ∀ a. Milliseconds -> Emitter a -> Emitter a
