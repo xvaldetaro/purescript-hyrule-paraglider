@@ -1,0 +1,19 @@
+{
+  "name": "emitter-rx-extensions",
+  "version": "1.0.0",
+  "description": "Collection of Rx operators for Halogen.Subscription.Emitter",
+  "main": "index.js",
+  "directories": {
+    "test": "spago -x test/test.dhall test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "purescript",
+    "rxjs",
+    "halogen"
+  ],
+  "author": "Alexandre Valdetaro",
+  "license": "MIT"
+}
