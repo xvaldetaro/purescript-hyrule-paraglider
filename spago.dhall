@@ -14,14 +14,10 @@ to generate this file without the comments in this block.
 , dependencies =
   [ "aff"
   , "arrays"
-  , "console"
-  , "datetime"
   , "effect"
   , "either"
-  , "exceptions"
   , "filterable"
   , "foldable-traversable"
-  , "halogen-subscriptions"
   , "hyrule"
   , "integers"
   , "js-timers"
@@ -29,8 +25,6 @@ to generate this file without the comments in this block.
   , "prelude"
   , "refs"
   , "st"
-  , "tailrec"
-  , "tuples"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs" ]

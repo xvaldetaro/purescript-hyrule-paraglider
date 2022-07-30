@@ -2,30 +2,30 @@ module Test.Main where
 
 import Prelude
 
-import Data.Array (length)
+import Data.Foldable (oneOfMap)
 import Effect (Effect)
 import Effect.Aff (Aff, Milliseconds(..), launchAff_)
 import Effect.Aff as Aff
 import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
 import Effect.Ref as Ref
-import FRP.Event (bus, create, subscribe)
-import HyruleRx (blockingGetN, combineLatest, fromAff, fromArray, fromCallable, interval, just, replayRefCount, take)
+import FRP.Event (bang, create)
+import Paraglider.AffBridge (blockingGetN, fromAff, fromCallable)
+import Paraglider.Rx (combineLatest, replayRefCount, take)
 import Test.Assert (assertEqual')
-import Test.Helper (assertRef, assertRef', testSubscribe)
-import Test.SubRefTest as SubRefTest
+import Test.DisposingRefTest as DisposingRefTest
+import Test.Helper (assertRef', testSubscribe)
 
 main :: Effect Unit
-main =
+main = do
   testRefCount
-  -- SubRefTest.test
-  -- testCombineLatest
-  -- testBangs
-  -- testInterval
-  -- testTake
-  -- launchAff_ do
-  --   testFromAff
-  --   testBlocking
+  DisposingRefTest.test
+  testCombineLatest
+  testBangs
+  testTake
+  launchAff_ do
+    testFromAff
+    testBlocking
 
 testRefCount :: Effect Unit
 testRefCount = do
@@ -50,11 +50,11 @@ testRefCount = do
   assertRef' "testRefCount 8" t2.capturesRef [2,3,4]
   t3 <- testSubscribe refEvent
   t4 <- testSubscribe refEvent
-  assertRef' "testRefCount 7" t3.capturesRef []
-  assertRef' "testRefCount 8" t4.capturesRef []
+  assertRef' "testRefCount 9" t3.capturesRef []
+  assertRef' "testRefCount 10" t4.capturesRef []
   push 1
-  assertRef' "testRefCount 7" t3.capturesRef [1]
-  assertRef' "testRefCount 8" t4.capturesRef [1]
+  assertRef' "testRefCount 11" t3.capturesRef [1]
+  assertRef' "testRefCount 12" t4.capturesRef [1]
   -- t.subscription
   -- assertRef' "testTake" t.capturesRef [1,1,1]
 
@@ -62,7 +62,7 @@ testRefCount = do
 testBlocking :: Aff Unit
 testBlocking = do
   let original = [1, 2, 3]
-  arr <- blockingGetN 3 $ fromArray original
+  arr <- blockingGetN 3 $ oneOfMap bang original
   liftEffect $ assertEqual' "Blocking get" {expected: original, actual: arr}
 
 testFromAff :: Aff Unit
@@ -81,24 +81,13 @@ testFromAff = do
 testBangs :: Effect Unit
 testBangs = do
   let fromCallableEmitter = fromCallable callable
-  t1 <- testSubscribe (just 3)
+  t1 <- testSubscribe (bang 3)
   t2 <- testSubscribe fromCallableEmitter
   assertRef' "just value" t1.capturesRef [3]
   assertRef' "fromCallable value" t2.capturesRef [100]
   log ""
   where
   callable = pure 100
-
-testInterval :: Effect Unit
-testInterval = do
-  t <- testSubscribe $ interval (Milliseconds 20.0)
-  assertRef' "testInterval before interval" t.capturesRef []
-  launchAff_ do
-    Aff.delay $ Milliseconds 65.0
-    liftEffect $ assertRef "testInterval after interval" t.capturesRef (length >>> eq 3)
-    liftEffect $ t.subscription
-    Aff.delay $ Milliseconds 6.0
-    liftEffect $ assertRef "testInterval after subscription" t.capturesRef (length >>> eq 3)
 
 testTake :: Effect Unit
 testTake = do
