@@ -1,4 +1,4 @@
-module EzRef where
+module Paraglider.STRefWrapper where
 
 import Prelude
 

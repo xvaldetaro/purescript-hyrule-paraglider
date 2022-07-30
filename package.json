@@ -1,7 +1,7 @@
 {
-  "name": "emitter-rx-extensions",
+  "name": "purescript-hyrule-paraglider",
   "version": "1.0.0",
-  "description": "Collection of Rx operators for Halogen.Subscription.Emitter",
+  "description": "Navigate Hyrule with Rx operators and Utils",
   "main": "index.js",
   "directories": {
     "test": "spago -x test/test.dhall test"
@@ -15,5 +15,10 @@
     "halogen"
   ],
   "author": "Alexandre Valdetaro",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "purescript": "^0.15.0",
+    "purs-tidy": "^0.7.2",
+    "spago": "^0.20.8"
+  }
 }
