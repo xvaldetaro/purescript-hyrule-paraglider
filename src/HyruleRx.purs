@@ -2,18 +2,21 @@ module HyruleRx where
 
 import Prelude
 
+import Control.Monad.ST.Class (class MonadST)
 import Data.Array (length, snoc)
 import Data.DateTime.Instant (Instant)
 import Data.Either (Either(..))
 import Data.Filterable (filter)
-import Data.Foldable (oneOfMap)
+import Data.Foldable (for_, oneOfMap)
 import Data.Int (floor, round)
+import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Effect.Aff (Aff, Canceler(..), Milliseconds(..), error, joinFiber, killFiber, launchAff, launchAff_, makeAff, try)
 import Effect.Class (liftEffect)
+import Effect.Class.Console (log)
 import Effect.Ref as Ref
 import Effect.Timer (clearTimeout, setTimeout)
-import FRP.Event (Event, bang, makeEvent, subscribe)
+import FRP.Event (AnEvent, Event, bang, create, makeEvent, memoize, subscribe)
 import FRP.Event as Event
 import FRP.Event.Class (biSampleOn, fold)
 import FRP.Event.Time as Event.Time
@@ -21,6 +24,35 @@ import Halogen.Subscription (Emitter, makeEmitter, unsubscribe)
 import Halogen.Subscription as Subscription
 import SubRef (addSub, dispose)
 import SubRef as SubRef
+
+replayRefCount :: ∀ a. Event a -> Effect (Event a)
+replayRefCount e = do
+  lastRef <- Ref.new Nothing
+  upstreamSubRef <- Ref.new Nothing
+  refCountRef <- Ref.new 0
+  { push, event } <- create
+
+  pure $ makeEvent \k -> do
+    refCount <- Ref.modify (_ + 1) refCountRef
+    when (refCount == 1) do
+      upstreamSub <- subscribe e \upstreamEmission -> do
+        Ref.write (Just upstreamEmission) lastRef
+        push upstreamEmission
+      Ref.write (Just upstreamSub) upstreamSubRef
+
+    mbLast <- Ref.read lastRef
+    for_ mbLast k
+    downstreamSub <- subscribe event k
+
+    pure $ downstreamSub *> do
+      refCount' <- Ref.modify (_ - 1) refCountRef
+      when (refCount' == 0) do
+        mbUpstreamSubRef <- Ref.read upstreamSubRef
+        for_ mbUpstreamSubRef identity
+        Ref.write Nothing upstreamSubRef
+        Ref.write Nothing lastRef
+
+
 
 fromHalo :: Emitter ~> Event
 fromHalo emitter = makeEvent \k -> do

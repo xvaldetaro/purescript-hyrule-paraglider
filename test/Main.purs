@@ -9,22 +9,55 @@ import Effect.Aff as Aff
 import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
 import Effect.Ref as Ref
-import FRP.Event (create)
-import HyruleRx (blockingGetN, combineLatest, fromAff, fromArray, fromCallable, interval, just, take)
+import FRP.Event (bus, create, subscribe)
+import HyruleRx (blockingGetN, combineLatest, fromAff, fromArray, fromCallable, interval, just, replayRefCount, take)
 import Test.Assert (assertEqual')
 import Test.Helper (assertRef, assertRef', testSubscribe)
 import Test.SubRefTest as SubRefTest
 
 main :: Effect Unit
-main = do
-  SubRefTest.test
-  testCombineLatest
-  testBangs
-  testInterval
-  testTake
-  launchAff_ do
-    testFromAff
-    testBlocking
+main =
+  testRefCount
+  -- SubRefTest.test
+  -- testCombineLatest
+  -- testBangs
+  -- testInterval
+  -- testTake
+  -- launchAff_ do
+  --   testFromAff
+  --   testBlocking
+
+testRefCount :: Effect Unit
+testRefCount = do
+  {event, push} <- create
+  refEvent <- replayRefCount event
+  t <- testSubscribe refEvent
+  push 1
+  push 2
+  t2 <- testSubscribe refEvent
+  assertRef' "testRefCount 1" t.capturesRef [1,2]
+  assertRef' "testRefCount 2" t2.capturesRef [2]
+  push 3
+  assertRef' "testRefCount 3" t.capturesRef [1,2,3]
+  assertRef' "testRefCount 4" t2.capturesRef [2,3]
+  t.subscription
+  push 4
+  assertRef' "testRefCount 5" t.capturesRef [1,2,3]
+  assertRef' "testRefCount 6" t2.capturesRef [2,3,4]
+  t2.subscription
+  push 5
+  assertRef' "testRefCount 7" t.capturesRef [1,2,3]
+  assertRef' "testRefCount 8" t2.capturesRef [2,3,4]
+  t3 <- testSubscribe refEvent
+  t4 <- testSubscribe refEvent
+  assertRef' "testRefCount 7" t3.capturesRef []
+  assertRef' "testRefCount 8" t4.capturesRef []
+  push 1
+  assertRef' "testRefCount 7" t3.capturesRef [1]
+  assertRef' "testRefCount 8" t4.capturesRef [1]
+  -- t.subscription
+  -- assertRef' "testTake" t.capturesRef [1,1,1]
+
 
 testBlocking :: Aff Unit
 testBlocking = do
