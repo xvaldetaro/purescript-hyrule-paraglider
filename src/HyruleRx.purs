@@ -2,7 +2,8 @@ module HyruleRx where
 
 import Prelude
 
-import Control.Monad.ST.Class (class MonadST)
+import Control.Monad.ST.Class (class MonadST, liftST)
+import Control.Monad.ST.Internal as Ref
 import Data.Array (length, snoc)
 import Data.DateTime.Instant (Instant)
 import Data.Either (Either(..))
@@ -13,59 +14,78 @@ import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Effect.Aff (Aff, Canceler(..), Milliseconds(..), error, joinFiber, killFiber, launchAff, launchAff_, makeAff, try)
 import Effect.Class (liftEffect)
-import Effect.Class.Console (log)
-import Effect.Ref as Ref
+import Effect.Ref as Effect.Ref
 import Effect.Timer (clearTimeout, setTimeout)
-import FRP.Event (AnEvent, Event, bang, create, makeEvent, memoize, subscribe)
+import FRP.Event (AnEvent, Event, bang, create, makeEvent, subscribe)
 import FRP.Event as Event
 import FRP.Event.Class (biSampleOn, fold)
 import FRP.Event.Time as Event.Time
 import Halogen.Subscription (Emitter, makeEmitter, unsubscribe)
 import Halogen.Subscription as Subscription
-import SubRef (addSub, dispose)
+import SubRef (SubRef, addSub, dispose)
 import SubRef as SubRef
 
-doOnUnsubscribe :: ∀ a. Effect Unit -> Event a -> Event a
+doOnUnsubscribe :: ∀ m a. Applicative m => Bind m => m Unit -> AnEvent m a -> AnEvent m a
 doOnUnsubscribe work upstream = makeEvent \downstreamPush -> do
   upstreamDisposable <- subscribe upstream downstreamPush
   pure $ upstreamDisposable *> work
 
-doOnSubscribe :: ∀ a. Effect Unit -> Event a -> Event a
+doOnSubscribe :: ∀ m a. Apply m => Bind m => m Unit -> AnEvent m a -> AnEvent m a
 doOnSubscribe work upstream = makeEvent \downstreamPush -> do
   work
   subscribe upstream downstreamPush
 
-replayRefCount :: ∀ a. Event a -> Effect (Event a)
+-- data EventLifecycle a
+--   = Emission a
+--   | OnSubscribe
+--   | OnUnsubscribe
+
+-- withLifecycle :: ∀ a m. AnEvent m a -> AnEvent m (EventLifecycle a)
+-- withLifecycle e = bus \push event ->
+--   doOnSubscribe onSubscribe
+
+
+-- type ConnectableEvent m a = { onConnect :: AnEvent m Unit, connect :: m (m Unit), event :: AnEvent m a }
+
+-- connectable :: ∀ m1 m2 s a . MonadST s m1 => MonadST s m2 => AnEvent m2 a -> m1 (ConnectableEvent m2 a)
+-- connectable upstream =
+--   { push, event } <- create
+--   onConnectEv <- create
+--   let downstream = makeEvent \k -> subscribe event k
+--   let connect = subscribe upstream push
+--   pure { onConnect: onConnectEv, connect, event: downstream }
+
+replayRefCount :: ∀ a m s. MonadST s m => AnEvent m a -> m (AnEvent m a)
 replayRefCount upstream = do
-  lastEmissionRef <- Ref.new Nothing
-  let onUpstreamUnsubscribed = Ref.write Nothing lastEmissionRef
+  lastEmissionRef <- liftST $ Ref.new Nothing
+  let onUpstreamUnsubscribed = void $ liftST $ Ref.write Nothing lastEmissionRef
   reffed <- doOnUnsubscribe onUpstreamUnsubscribed <$> refCount upstream
   pure $ makeEvent \k -> do
-    mbLast <- Ref.read lastEmissionRef
+    mbLast <- liftST $ Ref.read lastEmissionRef
     for_ mbLast k
     subscribe reffed \upstreamEmission -> do
-      Ref.write (Just upstreamEmission) lastEmissionRef
+      void $ liftST $ Ref.write (Just upstreamEmission) lastEmissionRef
       k upstreamEmission
 
-refCount :: ∀ a. Event a -> Effect (Event a)
+refCount :: ∀ m s a . MonadST s m => AnEvent m a -> m (AnEvent m a)
 refCount e = do
-  upstreamSubRef <- Ref.new Nothing
-  refCountRef <- Ref.new 0
+  upstreamSubRef <- liftST $ Ref.new Nothing
+  refCountRef <- liftST $ Ref.new 0
   { push, event } <- create
   pure $ makeEvent \k -> do
-    refCountBegin <- Ref.modify (_ + 1) refCountRef
+    refCountBegin <- liftST $ Ref.modify (_ + 1) refCountRef
     when (refCountBegin == 1) do
       upstreamSub <- subscribe e push
-      Ref.write (Just upstreamSub) upstreamSubRef
+      void $ liftST $ Ref.write (Just upstreamSub) upstreamSubRef
 
     downstreamSub <- subscribe event k
 
     pure $ downstreamSub *> do
-      refCountEnd <- Ref.modify (_ - 1) refCountRef
+      refCountEnd <- liftST $ Ref.modify (_ - 1) refCountRef
       when (refCountEnd == 0) do
-        mbUpstreamSubRef <- Ref.read upstreamSubRef
+        mbUpstreamSubRef <- liftST $ Ref.read upstreamSubRef
         for_ mbUpstreamSubRef identity
-        Ref.write Nothing upstreamSubRef
+        void $ liftST $ Ref.write Nothing upstreamSubRef
 
 fromHalo :: Emitter ~> Event
 fromHalo emitter = makeEvent \k -> do
@@ -82,15 +102,21 @@ toHalo event = makeEmitter \k -> do
 fromAff :: Aff ~> Event
 fromAff a = makeEvent \k -> launchAff_ (a >>= liftEffect <<< k) *> pure (pure unit)
 
+fromEffect :: ∀ a. Effect a -> Event a
+fromEffect effect = makeEvent \k -> do
+  emission <- effect
+  k emission
+  pure $ pure unit
+
 eventToAff :: Event ~> Aff
 eventToAff e = makeAff \k -> do
-  u <- Ref.new (pure unit)
+  u <- Effect.Ref.new (pure unit)
   unsub <- subscribe e \v -> do
     k (Right v)
-    join (Ref.read u)
-    Ref.write (pure unit) u
-  Ref.write unsub u
-  pure (Canceler \_ -> liftEffect (join (Ref.read u)))
+    join (Effect.Ref.read u)
+    Effect.Ref.write (pure unit) u
+  Effect.Ref.write unsub u
+  pure (Canceler \_ -> liftEffect (join (Effect.Ref.read u)))
 
 -- / A version of makeEvent that operates on Aff instead of Effect
 makeEventAff :: ∀ a . ((a -> Effect Unit) -> Aff (Effect Unit)) -> Event a
@@ -107,25 +133,44 @@ makeEventAff cb = makeEvent \k -> do
 
 collectEventToAff :: forall a. Milliseconds -> Event a -> Aff (Array a)
 collectEventToAff (Milliseconds ms) e = makeAff \k -> do
-  c <- Ref.new []
+  c <- Effect.Ref.new []
   tid <- setTimeout (round ms) do
-    Ref.read c >>= k <<< Right
+    Effect.Ref.read c >>= k <<< Right
   unsub <- subscribe e \v -> do
-    Ref.modify_ (_ <> [ v ]) c
+    Effect.Ref.modify_ (_ <> [ v ]) c
   pure (Canceler \_ -> liftEffect (clearTimeout tid) *> liftEffect unsub)
 
-take :: ∀ a. Int -> Event a -> Event a
+-- take :: ∀ a m s. MonadST s m => Int -> AnEvent m a -> AnEvent m a
+-- take n e = makeEvent \k -> do
+--   subRef :: ?x <- liftST $ Ref.new (pure unit)
+--   countRef <- liftST $ Ref.new n
+--   sub <- subscribe e \a -> do
+--     count <- liftST $ Ref.read countRef
+--     when (count == 1) do
+--       work <- liftST $ Ref.read subRef
+--       work
+--     when (count > 0) do
+--       void $ liftST $ Ref.write (count - 1) countRef
+--       k a
+--   void $ liftST $ Ref.write sub subRef
+--   pure $ sub
+
+take :: ∀ a m s. MonadST s m => Applicative m => Int -> AnEvent m a -> AnEvent m a
 take n e = makeEvent \k -> do
-  subRef <- SubRef.create
-  countRef <- Ref.new n
+  (subRef :: SubRef s m) <- liftST $ SubRef.create
+  countRef <- liftST $ Ref.new n
   sub <- subscribe e \a -> do
-    count <- Ref.read countRef
-    when (count == 1) $ dispose subRef
+    count <- liftST $ Ref.read countRef
+    when (count == 1) do
+      disposeEffect <- liftST $ SubRef.dispose subRef
+      disposeEffect
     when (count > 0) do
-      Ref.write (count - 1) countRef
+      void $ liftST $ Ref.write (count - 1) countRef
       k a
-  addSub subRef sub
-  pure $ dispose subRef
+  liftST $ SubRef.addSub subRef sub
+  pure do
+    disposal <- liftST $ SubRef.dispose subRef
+    disposal
 
 interval :: Milliseconds -> Event Instant
 interval (Milliseconds ms) = Event.Time.interval $ floor ms

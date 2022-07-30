@@ -1,30 +1,36 @@
-module SubRef (create, addSub, dispose, SubRef, Sub) where
+module SubRef (create, addSub, dispose, dispose', SubRef) where
 
 import Prelude
 
+import Control.Monad.ST.Class (class MonadST, liftST)
+import Control.Monad.ST.Internal (ST, STRef)
+import Control.Monad.ST.Internal as Ref
 import Effect (Effect)
-import Effect.Ref (Ref)
-import Effect.Ref as Ref
 
-type Sub = Effect Unit
+newtype SubRef s subM = SubRef (STRef s {isDisposed :: Boolean, work :: subM Unit})
 
-newtype SubRef = SubRef (Ref {isDisposed :: Boolean, work :: Effect Unit})
-
-create :: Effect SubRef
+create :: ∀ s subM. Applicative subM => ST s (SubRef s subM)
 create = do
   let val = {isDisposed: false, work: pure unit}
   ref <- Ref.new val
   pure $ SubRef ref
 
-addSub :: SubRef -> Sub -> Effect Unit
+addSub :: ∀ s subM. Apply subM => SubRef s subM -> subM Unit -> ST s Unit
 addSub (SubRef ref) sub = do
-  {isDisposed, work} <- Ref.read ref
-  if isDisposed then sub
-  else Ref.write {isDisposed, work: work *> sub} ref
+  {isDisposed, work} <-  Ref.read ref
+  if isDisposed then pure unit
+  else void $ Ref.write {isDisposed, work: work *> sub} ref
 
-dispose :: SubRef -> Effect Unit
+dispose :: ∀ s subM. Applicative subM => SubRef s subM -> ST s (subM Unit)
 dispose (SubRef ref) = do
   {isDisposed, work} <- Ref.read ref
   unless isDisposed do
-    Ref.write {isDisposed: true, work: pure unit} ref
-    work
+    void $ Ref.write {isDisposed: true, work: pure unit} ref
+  pure work
+
+dispose' :: ∀ s subM. MonadST s subM => Applicative subM => SubRef s subM -> subM Unit
+dispose' (SubRef ref) = do
+  {isDisposed, work} <- liftST $ Ref.read ref
+  unless isDisposed do
+    void $ liftST $ Ref.write {isDisposed: true, work: pure unit} ref
+  work
