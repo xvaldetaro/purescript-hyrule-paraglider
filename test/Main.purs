@@ -16,13 +16,13 @@ import Test.Helper (assertRef, assertRef', testSubscribe)
 import Test.SubRefTest as SubRefTest
 
 main :: Effect Unit
-main =
+main = do
   testRefCount
-  -- SubRefTest.test
+  SubRefTest.test
   -- testCombineLatest
   -- testBangs
   -- testInterval
-  -- testTake
+  testTake
   -- launchAff_ do
   --   testFromAff
   --   testBlocking

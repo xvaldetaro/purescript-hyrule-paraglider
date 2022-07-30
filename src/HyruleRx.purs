@@ -16,6 +16,7 @@ import Effect.Aff (Aff, Canceler(..), Milliseconds(..), error, joinFiber, killFi
 import Effect.Class (liftEffect)
 import Effect.Ref as Effect.Ref
 import Effect.Timer (clearTimeout, setTimeout)
+import EzRef as EzRef
 import FRP.Event (AnEvent, Event, bang, create, makeEvent, subscribe)
 import FRP.Event as Event
 import FRP.Event.Class (biSampleOn, fold)
@@ -57,35 +58,35 @@ doOnSubscribe work upstream = makeEvent \downstreamPush -> do
 
 replayRefCount :: ∀ a m s. MonadST s m => AnEvent m a -> m (AnEvent m a)
 replayRefCount upstream = do
-  lastEmissionRef <- liftST $ Ref.new Nothing
-  let onUpstreamUnsubscribed = void $ liftST $ Ref.write Nothing lastEmissionRef
+  lastEmissionRef <- EzRef.new Nothing
+  let onUpstreamUnsubscribed = EzRef.write Nothing lastEmissionRef
   reffed <- doOnUnsubscribe onUpstreamUnsubscribed <$> refCount upstream
   pure $ makeEvent \k -> do
-    mbLast <- liftST $ Ref.read lastEmissionRef
+    mbLast <- EzRef.read lastEmissionRef
     for_ mbLast k
     subscribe reffed \upstreamEmission -> do
-      void $ liftST $ Ref.write (Just upstreamEmission) lastEmissionRef
+      EzRef.write (Just upstreamEmission) lastEmissionRef
       k upstreamEmission
 
 refCount :: ∀ m s a . MonadST s m => AnEvent m a -> m (AnEvent m a)
 refCount e = do
-  upstreamSubRef <- liftST $ Ref.new Nothing
-  refCountRef <- liftST $ Ref.new 0
+  upstreamSubRef <- EzRef.new Nothing
+  refCountRef <- EzRef.new 0
   { push, event } <- create
   pure $ makeEvent \k -> do
-    refCountBegin <- liftST $ Ref.modify (_ + 1) refCountRef
+    refCountBegin <- EzRef.modify (_ + 1) refCountRef
     when (refCountBegin == 1) do
       upstreamSub <- subscribe e push
-      void $ liftST $ Ref.write (Just upstreamSub) upstreamSubRef
+      EzRef.write (Just upstreamSub) upstreamSubRef
 
     downstreamSub <- subscribe event k
 
     pure $ downstreamSub *> do
-      refCountEnd <- liftST $ Ref.modify (_ - 1) refCountRef
+      refCountEnd <- EzRef.modify (_ - 1) refCountRef
       when (refCountEnd == 0) do
-        mbUpstreamSubRef <- liftST $ Ref.read upstreamSubRef
+        mbUpstreamSubRef <- EzRef.read upstreamSubRef
         for_ mbUpstreamSubRef identity
-        void $ liftST $ Ref.write Nothing upstreamSubRef
+        EzRef.write Nothing upstreamSubRef
 
 fromHalo :: Emitter ~> Event
 fromHalo emitter = makeEvent \k -> do
@@ -142,35 +143,31 @@ collectEventToAff (Milliseconds ms) e = makeAff \k -> do
 
 -- take :: ∀ a m s. MonadST s m => Int -> AnEvent m a -> AnEvent m a
 -- take n e = makeEvent \k -> do
---   subRef :: ?x <- liftST $ Ref.new (pure unit)
---   countRef <- liftST $ Ref.new n
+--   subRef :: ?x <- EzRef.new (pure unit)
+--   countRef <- EzRef.new n
 --   sub <- subscribe e \a -> do
---     count <- liftST $ Ref.read countRef
+--     count <- EzRef.read countRef
 --     when (count == 1) do
---       work <- liftST $ Ref.read subRef
+--       work <- EzRef.read subRef
 --       work
 --     when (count > 0) do
---       void $ liftST $ Ref.write (count - 1) countRef
+--       EzRef.write (count - 1) countRef
 --       k a
---   void $ liftST $ Ref.write sub subRef
+--   EzRef.write sub subRef
 --   pure $ sub
 
 take :: ∀ a m s. MonadST s m => Applicative m => Int -> AnEvent m a -> AnEvent m a
 take n e = makeEvent \k -> do
-  (subRef :: SubRef s m) <- liftST $ SubRef.create
-  countRef <- liftST $ Ref.new n
+  (subRef :: SubRef s m) <- SubRef.create
+  countRef <- EzRef.new n
   sub <- subscribe e \a -> do
-    count <- liftST $ Ref.read countRef
-    when (count == 1) do
-      disposeEffect <- liftST $ SubRef.dispose subRef
-      disposeEffect
+    count <- EzRef.read countRef
+    when (count == 1) $ SubRef.dispose subRef
     when (count > 0) do
-      void $ liftST $ Ref.write (count - 1) countRef
+      EzRef.write (count - 1) countRef
       k a
-  liftST $ SubRef.addSub subRef sub
-  pure do
-    disposal <- liftST $ SubRef.dispose subRef
-    disposal
+  SubRef.addSub subRef sub
+  pure $ SubRef.dispose subRef
 
 interval :: Milliseconds -> Event Instant
 interval (Milliseconds ms) = Event.Time.interval $ floor ms
