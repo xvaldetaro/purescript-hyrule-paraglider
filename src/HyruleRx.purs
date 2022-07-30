@@ -25,34 +25,47 @@ import Halogen.Subscription as Subscription
 import SubRef (addSub, dispose)
 import SubRef as SubRef
 
+doOnUnsubscribe :: ∀ a. Effect Unit -> Event a -> Event a
+doOnUnsubscribe work upstream = makeEvent \downstreamPush -> do
+  upstreamDisposable <- subscribe upstream downstreamPush
+  pure $ upstreamDisposable *> work
+
+doOnSubscribe :: ∀ a. Effect Unit -> Event a -> Event a
+doOnSubscribe work upstream = makeEvent \downstreamPush -> do
+  work
+  subscribe upstream downstreamPush
+
 replayRefCount :: ∀ a. Event a -> Effect (Event a)
-replayRefCount e = do
-  lastRef <- Ref.new Nothing
+replayRefCount upstream = do
+  lastEmissionRef <- Ref.new Nothing
+  let onUpstreamUnsubscribed = Ref.write Nothing lastEmissionRef
+  reffed <- doOnUnsubscribe onUpstreamUnsubscribed <$> refCount upstream
+  pure $ makeEvent \k -> do
+    mbLast <- Ref.read lastEmissionRef
+    for_ mbLast k
+    subscribe reffed \upstreamEmission -> do
+      Ref.write (Just upstreamEmission) lastEmissionRef
+      k upstreamEmission
+
+refCount :: ∀ a. Event a -> Effect (Event a)
+refCount e = do
   upstreamSubRef <- Ref.new Nothing
   refCountRef <- Ref.new 0
   { push, event } <- create
-
   pure $ makeEvent \k -> do
-    refCount <- Ref.modify (_ + 1) refCountRef
-    when (refCount == 1) do
-      upstreamSub <- subscribe e \upstreamEmission -> do
-        Ref.write (Just upstreamEmission) lastRef
-        push upstreamEmission
+    refCountBegin <- Ref.modify (_ + 1) refCountRef
+    when (refCountBegin == 1) do
+      upstreamSub <- subscribe e push
       Ref.write (Just upstreamSub) upstreamSubRef
 
-    mbLast <- Ref.read lastRef
-    for_ mbLast k
     downstreamSub <- subscribe event k
 
     pure $ downstreamSub *> do
-      refCount' <- Ref.modify (_ - 1) refCountRef
-      when (refCount' == 0) do
+      refCountEnd <- Ref.modify (_ - 1) refCountRef
+      when (refCountEnd == 0) do
         mbUpstreamSubRef <- Ref.read upstreamSubRef
         for_ mbUpstreamSubRef identity
         Ref.write Nothing upstreamSubRef
-        Ref.write Nothing lastRef
-
-
 
 fromHalo :: Emitter ~> Event
 fromHalo emitter = makeEvent \k -> do
