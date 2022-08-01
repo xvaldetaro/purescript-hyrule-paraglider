@@ -3,9 +3,10 @@ module Paraglider.Rx where
 import Prelude
 
 import Control.Monad.ST.Class (class MonadST)
-import Data.Foldable (for_)
+import Data.Foldable (class Foldable, for_)
+import Data.Foldable as Foldable
 import Data.Maybe (Maybe(..))
-import FRP.Event (AnEvent, create, makeEvent, subscribe)
+import FRP.Event (AnEvent, bang, create, makeEvent, subscribe)
 import FRP.Event.Class (biSampleOn)
 import Paraglider.DisposingRef as DisposingRef
 import Paraglider.STRefWrapper as RefW
@@ -103,6 +104,37 @@ combineLatest
   :: ∀ a b c m s. MonadST s m => (a -> b -> c) -> AnEvent m a -> AnEvent m b -> AnEvent m c
 combineLatest f e1 e2 = biSampleOn e2 $ f <$> e1
 
+combineFold'
+  :: ∀ b f m s
+   . MonadST s m
+  => Foldable f
+  => Monoid b
+  => f (AnEvent m b)
+  -> AnEvent m b
+combineFold' = combineFold append mempty
+
+-- / Folds over the **last** emissions from upstream events, emits the folded result to downstream.
+-- /
+-- / Notice that this is different from `folded`. In `folded` we keep folding over every upstream
+-- / emission since the start. Effectively making all upstream emissions (including previous emissions)
+-- / partof the fold. Whereas in `combineFold` we fold over the **last** round of emissions from
+-- / upstream only.
+combineFold
+  :: ∀ a b f m s
+   . MonadST s m
+  => Foldable f
+  => (a -> b -> b)
+  -> b
+  -> f (AnEvent m a)
+  -> AnEvent m b
+combineFold f initial xs =
+  let
+      mapper :: AnEvent m b -> AnEvent m a -> AnEvent m b
+      mapper = \accEvent ev -> biSampleOn accEvent $ f <$> ev
+  in
+  Foldable.foldl (mapper) (bang initial) xs
+
+
 combineLatest3
   :: ∀ a b c d m s
    . MonadST s m
@@ -112,3 +144,9 @@ combineLatest3
   -> AnEvent m c
   -> AnEvent m d
 combineLatest3 f e1 e2 e3 = biSampleOn e3 $ biSampleOn e2 (f <$> e1)
+
+toClosure :: forall m s r a. MonadST s m => m (AnEvent m a) -> (AnEvent m a -> r) -> AnEvent m r
+toClosure upstreamEffect closure = makeEvent \downstreamPush -> do
+  upstream <- upstreamEffect
+  downstreamPush (closure upstream)
+  pure (pure unit)

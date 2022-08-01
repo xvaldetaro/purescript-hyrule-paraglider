@@ -11,7 +11,7 @@ import Effect.Aff (Aff, Canceler(..), Milliseconds(..), error, joinFiber, killFi
 import Effect.Class (liftEffect)
 import Effect.Ref as Effect.Ref
 import Effect.Timer (clearTimeout, setTimeout)
-import FRP.Event (Event, makeEvent, subscribe)
+import FRP.Event (AnEvent, Event, makeEvent, subscribe)
 import FRP.Event.Class (fold)
 
 -- / Will collect `i` emissions. Then will push that to the returned Aff and unsubscribe from upstream
@@ -28,7 +28,7 @@ fromCallable e = makeEvent \k -> (e >>= k) *> pure (pure unit)
 fromAff :: Aff ~> Event
 fromAff a = makeEvent \k -> launchAff_ (a >>= liftEffect <<< k) *> pure (pure unit)
 
-fromEffect :: ∀ a. Effect a -> Event a
+fromEffect :: ∀ a m. Monad m => m a -> AnEvent m a
 fromEffect effect = makeEvent \k -> do
   emission <- effect
   k emission

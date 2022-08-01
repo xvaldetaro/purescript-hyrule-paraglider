@@ -2,6 +2,7 @@ module Test.Main where
 
 import Prelude
 
+import Data.Array (cons, snoc)
 import Data.Foldable (oneOfMap)
 import Effect (Effect)
 import Effect.Aff (Aff, Milliseconds(..), launchAff_)
@@ -11,13 +12,14 @@ import Effect.Class.Console (log)
 import Effect.Ref as Ref
 import FRP.Event (bang, create)
 import Paraglider.AffBridge (blockingGetN, fromAff, fromCallable)
-import Paraglider.Rx (combineLatest, replayRefCount, take)
+import Paraglider.Rx (combineFold, combineFold', combineLatest, replayRefCount, take)
 import Test.Assert (assertEqual')
 import Test.DisposingRefTest as DisposingRefTest
 import Test.Helper (assertRef', testSubscribe)
 
 main :: Effect Unit
 main = do
+  testCombineFold
   testRefCount
   DisposingRefTest.test
   testCombineLatest
@@ -26,6 +28,15 @@ main = do
   launchAff_ do
     testFromAff
     testBlocking
+
+testCombineFold :: Effect Unit
+testCombineFold = do
+  {event, push} <- create
+  t <- testSubscribe $ combineFold (flip snoc) [] [bang 1, bang 2,  event, bang 10]
+  assertRef' "testRefCount 1" t.capturesRef []
+  push 3
+  push 4
+  assertRef' "testRefCount 1" t.capturesRef [[1,2,3,10], [1,2,4,10]]
 
 testRefCount :: Effect Unit
 testRefCount = do
