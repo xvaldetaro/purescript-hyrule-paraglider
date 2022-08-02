@@ -3,10 +3,11 @@ module Paraglider.Rx where
 import Prelude
 
 import Control.Monad.ST.Class (class MonadST)
+import Data.Filterable (filter, filterMap)
 import Data.Foldable (class Foldable, for_)
 import Data.Foldable as Foldable
 import Data.Maybe (Maybe(..))
-import FRP.Event (AnEvent, bang, create, makeEvent, subscribe)
+import FRP.Event (AnEvent, bang, create, keepLatest, makeEvent, mapAccum, subscribe, withLast)
 import FRP.Event.Class (biSampleOn)
 import Paraglider.DisposingRef as DisposingRef
 import Paraglider.STRefWrapper as RefW
@@ -97,6 +98,14 @@ take n e = makeEvent \k -> do
       k a
   DisposingRef.addSub subRef sub
   pure $ DisposingRef.dispose subRef
+
+switchMap :: ∀ a b m s. MonadST s m => (a -> AnEvent m b) -> AnEvent m a -> AnEvent m b
+switchMap f e = keepLatest (f <$> e)
+
+distinctUntilChanged :: ∀ a m s. Eq a => MonadST s m => AnEvent m a -> AnEvent m a
+distinctUntilChanged = filterMap go <<< withLast
+  where
+    go {now, last} = if (Just now) == last then Nothing else Just now
 
 -- / When an item is emitted by either one of the upstream Events will call `f` to combine the items
 -- / and emit that to downstream
