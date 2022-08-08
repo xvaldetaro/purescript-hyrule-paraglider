@@ -30,10 +30,15 @@ type Events t =
 nut :: ∀ s m l p. Nut_ s m l p
 nut = vbussed (Proxy :: _ (V (Events PlainOl))) \push (eventRaw :: { | Events (AnEvent m)}) ->
   usingEffect (replayRefCount routeChangeEvent) \currentRouteEv ->
-    D.div (bangCss "flex flex-row")
-      [ Sidebar.nut currentRouteEv
-      , switcher fromRouteToNut currentRouteEv
-      ]
+    D.div (bangCss "flex flex-col w-screen h-screen")
+    [ D.div
+      (bangCss "bg-slate-900 text-slate-50 h-14 px-8 text-xl flex flex-col justify-center")
+      [text_ "Paraglider Examples"]
+    , D.div (bangCss "flex flex-row h-full")
+        [ Sidebar.nut currentRouteEv
+        , D.div (bangCss "m-5") [switcher fromRouteToNut currentRouteEv]
+        ]
+    ]
   where
   fromRouteToNut = case _ of
     Route.Landing -> D.div_ [text_ "Select the operator on the side menu to see how it works"]

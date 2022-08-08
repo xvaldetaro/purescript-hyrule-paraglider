@@ -15,7 +15,7 @@ import Routing.Duplex (print)
 
 nut :: ∀ s m l p. AnEvent m Route -> Nut_ s m l p
 nut currentRouteEv =
-  D.div (bangCss "flex flex-col h-full text-slate-700")
+  D.div (bangCss "flex flex-col h-full text-slate-700 px-8 pt-6 border-r")
     [ menuItem Route.Combine "Combine"
     , menuItem Route.Take "Take"
     ]
@@ -23,7 +23,7 @@ nut currentRouteEv =
   menuItem route text = D.a
     ( (bang $ D.Href := safeHref route)
         <|> combineCss
-          [ bang $ css "hover:text-teal-500 px-4 align-middle items-center"
+          [ bang $ css "hover:text-teal-500 align-middle items-center mb-1"
           , currentRouteEv <#> (\r -> if r == route then css "text-teal-500" else "")
           ]
       )
