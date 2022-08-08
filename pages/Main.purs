@@ -2,9 +2,13 @@ module Main where
 
 import Prelude
 
-import Deku.Control (text_)
+import App.Navigation (redirectToIfInialRouteIsInvalid)
+import App.Route as Route
 import Deku.Toplevel (runInBody)
 import Effect (Effect)
+import Nuts.TopLevel as TopLevel
 
 main :: Effect Unit
-main = runInBody (text_ "Hello world")
+main = do
+  redirectToIfInialRouteIsInvalid Route.Landing
+  runInBody TopLevel.nut
