@@ -24,6 +24,7 @@ to generate this file without the comments in this block.
   , "prelude"
   , "refs"
   , "st"
+  , "tuples"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs" ]

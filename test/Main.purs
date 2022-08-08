@@ -4,6 +4,7 @@ import Prelude
 
 import Data.Array (cons, snoc)
 import Data.Foldable (oneOfMap)
+import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Effect.Aff (Aff, Milliseconds(..), launchAff_)
 import Effect.Aff as Aff
@@ -12,13 +13,15 @@ import Effect.Class.Console (log)
 import Effect.Ref as Ref
 import FRP.Event (bang, create)
 import Paraglider.AffBridge (blockingGetN, fromAff, fromCallable)
-import Paraglider.Rx (combineFold, combineFold', combineLatest, replayRefCount, take)
+import Paraglider.Rx (combineFold, combineFold', combineLatest, replayRefCount, skipWhile, take, takeWhile)
 import Test.Assert (assertEqual')
 import Test.DisposingRefTest as DisposingRefTest
 import Test.Helper (assertRef', testSubscribe)
 
 main :: Effect Unit
 main = do
+  testTakeWhile
+  testSkipWhile
   testCombineFold
   testRefCount
   DisposingRefTest.test
@@ -29,14 +32,33 @@ main = do
     testFromAff
     testBlocking
 
+testTakeWhile :: Effect Unit
+testTakeWhile = do
+  {event, push} <- create
+  t <- testSubscribe $ takeWhile (\x -> if x < 2 then Just (x + 100) else Nothing) event
+  push 0
+  push 1
+  push 4
+  push 1
+  assertRef' "testTakeWhile 1" t.capturesRef [100,101]
+
+testSkipWhile :: Effect Unit
+testSkipWhile = do
+  {event, push} <- create
+  t <- testSubscribe $ skipWhile (_ < 2) event
+  push 0
+  push 1
+  push 4
+  push 1
+  assertRef' "testSkipWhile 1" t.capturesRef [4,1]
+
 testCombineFold :: Effect Unit
 testCombineFold = do
   {event, push} <- create
   t <- testSubscribe $ combineFold (flip snoc) [] [bang 1, bang 2,  event, bang 10]
-  assertRef' "testRefCount 1" t.capturesRef []
   push 3
   push 4
-  assertRef' "testRefCount 1" t.capturesRef [[1,2,3,10], [1,2,4,10]]
+  assertRef' "testCombineFold 1" t.capturesRef [[1,2,3,10], [1,2,4,10]]
 
 testRefCount :: Effect Unit
 testRefCount = do

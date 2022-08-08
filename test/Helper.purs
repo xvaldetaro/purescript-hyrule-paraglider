@@ -23,7 +23,7 @@ printRef ref = do
 assertRef' :: ∀ a. Eq a => Show a => String -> Ref a -> a -> Effect Unit
 assertRef' callsite ref value = do
   value' <- Ref.read ref
-  assertEqual' callsite {actual: value, expected: value'}
+  assertEqual' callsite {actual: value', expected: value}
 
 testSubscribe :: ∀ a. Event a
   -> Effect { subscription :: Effect Unit, capturesRef :: Ref (Array a) }
