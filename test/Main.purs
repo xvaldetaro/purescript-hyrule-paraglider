@@ -2,7 +2,7 @@ module Test.Main where
 
 import Prelude
 
-import Data.Array (cons, snoc)
+import Data.Array (snoc)
 import Data.Foldable (oneOfMap)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
@@ -13,7 +13,7 @@ import Effect.Class.Console (log)
 import Effect.Ref as Ref
 import FRP.Event (bang, create)
 import Paraglider.AffBridge (blockingGetN, fromAff, fromCallable)
-import Paraglider.Rx (combineFold, combineFold', combineLatest, replayRefCount, skipWhile, take, takeWhile)
+import Paraglider.Rx (combineFold, combineLatest, replayRefCount, skipWhile, take, takeWhile)
 import Test.Assert (assertEqual')
 import Test.DisposingRefTest as DisposingRefTest
 import Test.Helper (assertRef', testSubscribe)

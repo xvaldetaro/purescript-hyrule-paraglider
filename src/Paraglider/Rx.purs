@@ -3,12 +3,12 @@ module Paraglider.Rx where
 import Prelude
 
 import Control.Monad.ST.Class (class MonadST)
-import Data.Filterable (filter, filterMap)
+import Data.Filterable (filterMap)
 import Data.Foldable (class Foldable, for_)
 import Data.Foldable as Foldable
-import Data.Maybe (Maybe(..), isJust, maybe)
+import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple(..))
-import FRP.Event (AnEvent, bang, create, gate, gateBy, keepLatest, makeEvent, mapAccum, subscribe, withLast)
+import FRP.Event (AnEvent, bang, create, keepLatest, makeEvent, mapAccum, subscribe, withLast)
 import FRP.Event.Class (biSampleOn)
 import Paraglider.DisposingRef as DisposingRef
 import Paraglider.STRefWrapper as RefW
