@@ -68,6 +68,13 @@ distinctUntilChanged = filterMap go <<< withLast
   where
     go {now, last} = if (Just now) == last then Nothing else Just now
 
+-- / Calls `work` on every emission. `work` is a callback that receives the emitted a as argument. `work`'s return is an Effectful computation
+doOnNext :: ∀ m a. Apply m => Bind m => (a -> m Unit) -> AnEvent m a -> AnEvent m a
+doOnNext work upstream = makeEvent \downstreamPush -> do
+  subscribe upstream \a -> do
+    work a
+    downstreamPush a
+
 -- / Calls `work` upon Subscription. `work` is a callback that receives the "push" function of the
 -- / Event as argument. `work`'s return is an Effectful computation
 doOnSubscribe :: ∀ m a. Apply m => Bind m => ((a -> m Unit) -> m Unit) -> AnEvent m a -> AnEvent m a
@@ -80,6 +87,15 @@ doOnUnsubscribe :: ∀ m a. Applicative m => Bind m => m Unit -> AnEvent m a -> 
 doOnUnsubscribe work upstream = makeEvent \downstreamPush -> do
   upstreamDisposable <- subscribe upstream downstreamPush
   pure $ upstreamDisposable *> work
+
+-- | Flatten a nested `Event`, reporting values only from the all inner Events.
+flatMap :: ∀ s m a b. MonadST s m => (a -> AnEvent m b) -> AnEvent m a -> AnEvent m b
+flatMap f e = makeEvent \k -> do
+  disposingRef <- DisposingRef.create
+  upstreamDisposable <- subscribe e \a -> do
+    innerDisposable <- subscribe (f a) k
+    DisposingRef.addSub disposingRef innerDisposable
+  pure $ upstreamDisposable *> DisposingRef.dispose disposingRef
 
 -- / Creates 1 upstream subscription for N downstream subscribers. The upstream subscription is
 -- / started when the first downstream subscription happens. The upstream subscription is terminated

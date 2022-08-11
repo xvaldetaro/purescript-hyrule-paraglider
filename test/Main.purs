@@ -2,6 +2,7 @@ module Test.Main where
 
 import Prelude
 
+import Control.Alt ((<|>))
 import Data.Array (snoc)
 import Data.Foldable (oneOfMap)
 import Data.Maybe (Maybe(..))
@@ -13,13 +14,14 @@ import Effect.Class.Console (log)
 import Effect.Ref as Ref
 import FRP.Event (bang, create)
 import Paraglider.AffBridge (blockingGetN, fromAff, fromCallable)
-import Paraglider.Rx (combineFold, combineLatest, replayRefCount, skipWhile, take, takeWhile)
+import Paraglider.Rx (combineFold, combineLatest, flatMap, replayRefCount, skipWhile, take, takeWhile)
 import Test.Assert (assertEqual')
 import Test.DisposingRefTest as DisposingRefTest
 import Test.Helper (assertRef', testSubscribe)
 
 main :: Effect Unit
 main = do
+  testFlatMap
   testTakeWhile
   testSkipWhile
   testCombineFold
@@ -31,6 +33,21 @@ main = do
   launchAff_ do
     testFromAff
     testBlocking
+
+testFlatMap :: Effect Unit
+testFlatMap = do
+  {event, push} <- create
+  t <- testSubscribe $ flatMap identity event
+  push (bang 1 <|> bang 2)
+  {event: innerEv, push: innerPush} <- create
+  push (innerEv)
+  innerPush 3
+  push (bang 4 <|> bang 5)
+  innerPush 6
+  innerPush 7
+  push (bang 8)
+  innerPush 9
+  assertRef' "testFlatMap 1" t.capturesRef [1,2,3,4,5,6,7,8,9]
 
 testTakeWhile :: Effect Unit
 testTakeWhile = do
