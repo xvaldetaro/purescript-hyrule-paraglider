@@ -3,16 +3,17 @@ module Test.Main where
 import Prelude
 
 import Control.Alt ((<|>))
-import Data.Array (snoc)
+import Data.Array (mapWithIndex, snoc)
 import Data.Foldable (oneOfMap)
 import Data.Maybe (Maybe(..))
+import Debug (spy)
 import Effect (Effect)
 import Effect.Aff (Aff, Milliseconds(..), launchAff_)
 import Effect.Aff as Aff
 import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
 import Effect.Ref as Ref
-import FRP.Event (bang, create)
+import FRP.Event (create, subscribe)
 import Paraglider.AffBridge (blockingGetN, fromAff, fromCallable)
 import Paraglider.Rx (combineFold, combineLatest, flatMap, replayRefCount, skipWhile, take, takeWhile)
 import Test.Assert (assertEqual')
@@ -38,14 +39,14 @@ testFlatMap :: Effect Unit
 testFlatMap = do
   {event, push} <- create
   t <- testSubscribe $ flatMap identity event
-  push (bang 1 <|> bang 2)
+  push (pure 1 <|> pure 2)
   {event: innerEv, push: innerPush} <- create
   push (innerEv)
   innerPush 3
-  push (bang 4 <|> bang 5)
+  push (pure 4 <|> pure 5)
   innerPush 6
   innerPush 7
-  push (bang 8)
+  push (pure 8)
   innerPush 9
   assertRef' "testFlatMap 1" t.capturesRef [1,2,3,4,5,6,7,8,9]
 
@@ -72,9 +73,12 @@ testSkipWhile = do
 testCombineFold :: Effect Unit
 testCombineFold = do
   {event, push} <- create
-  t <- testSubscribe $ combineFold (flip snoc) [] [bang 1, bang 2,  event, bang 10]
+  -- {push: p2} <- create
+  t <- testSubscribe $ combineFold (flip snoc) [] [pure 1, pure 2, event, pure 10]
   push 3
   push 4
+  t.subscription
+  push 5
   assertRef' "testCombineFold 1" t.capturesRef [[1,2,3,10], [1,2,4,10]]
 
 testRefCount :: Effect Unit
@@ -112,7 +116,7 @@ testRefCount = do
 testBlocking :: Aff Unit
 testBlocking = do
   let original = [1, 2, 3]
-  arr <- blockingGetN 3 $ oneOfMap bang original
+  arr <- blockingGetN 3 $ oneOfMap pure original
   liftEffect $ assertEqual' "Blocking get" {expected: original, actual: arr}
 
 testFromAff :: Aff Unit
@@ -131,7 +135,7 @@ testFromAff = do
 testBangs :: Effect Unit
 testBangs = do
   let fromCallableEmitter = fromCallable callable
-  t1 <- testSubscribe (bang 3)
+  t1 <- testSubscribe (pure 3)
   t2 <- testSubscribe fromCallableEmitter
   assertRef' "just value" t1.capturesRef [3]
   assertRef' "fromCallable value" t2.capturesRef [100]

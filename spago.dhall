@@ -13,6 +13,7 @@ to generate this file without the comments in this block.
 , dependencies =
   [ "aff"
   , "arrays"
+  , "debug"
   , "effect"
   , "either"
   , "filterable"
@@ -20,7 +21,9 @@ to generate this file without the comments in this block.
   , "hyrule"
   , "integers"
   , "js-timers"
+  , "lists"
   , "maybe"
+  , "ordered-collections"
   , "prelude"
   , "refs"
   , "st"

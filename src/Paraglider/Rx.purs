@@ -3,13 +3,20 @@ module Paraglider.Rx where
 import Prelude
 
 import Control.Monad.ST.Class (class MonadST)
+import Data.Array (fromFoldable, length, mapWithIndex, replicate)
+import Data.Array as Array
 import Data.Filterable (filterMap)
-import Data.Foldable (class Foldable, for_)
+import Data.Foldable (class Foldable, for_, sequence_, traverse_)
 import Data.Foldable as Foldable
+import Data.List (List)
+import Data.List as List
+import Data.Map (Map)
+import Data.Map as Map
 import Data.Maybe (Maybe(..))
+import Data.Traversable (sequence)
 import Data.Tuple (Tuple(..))
-import FRP.Event (AnEvent, bang, create, keepLatest, makeEvent, mapAccum, subscribe, withLast)
-import FRP.Event.Class (biSampleOn)
+import Debug (spy)
+import FRP.Event (AnEvent, create, fold, keepLatest, makeEvent, mapAccum, subscribe, withLast)
 import Paraglider.DisposingRef as DisposingRef
 import Paraglider.STRefWrapper as RefW
 
@@ -17,13 +24,7 @@ import Paraglider.STRefWrapper as RefW
 -- / `connect` field being executed. (`connect` returns the unsubscription Effecvgt)
 type ConnectableEvent m a = { connect :: m (m Unit), event :: AnEvent m a }
 
-combineFold'
-  :: ∀ b f m s
-   . MonadST s m
-  => Foldable f
-  => Monoid b
-  => f (AnEvent m b)
-  -> AnEvent m b
+combineFold' :: ∀ b m s . MonadST s m => Monoid b => Array (AnEvent m b) -> AnEvent m b
 combineFold' = combineFold append mempty
 
 -- / Folds over the **last** emissions from upstream events, emits the folded result to downstream.
@@ -32,26 +33,42 @@ combineFold' = combineFold append mempty
 -- / emission since the start. Effectively making all upstream emissions (including previous emissions)
 -- / partof the fold. Whereas in `combineFold` we fold over the **last** round of emissions from
 -- / upstream only.
-combineFold
-  :: ∀ a b f m s
-   . MonadST s m
-  => Foldable f
-  => (a -> b -> b)
-  -> b
-  -> f (AnEvent m a)
-  -> AnEvent m b
-combineFold f initial xs =
+combineFold :: ∀ a b m s . MonadST s m => (a -> b -> b) -> b -> Array (AnEvent m a) -> AnEvent m b
+combineFold f initial xs = makeEvent \downstreamPush -> do
+  {push, event} <- create
   let
-      mapper :: AnEvent m b -> AnEvent m a -> AnEvent m b
-      mapper = \accEvent ev -> biSampleOn accEvent $ f <$> ev
-  in
-  Foldable.foldl (mapper) (pure initial) xs
+      len = length xs
+      aggregateEmissionsInMap :: {i :: Int, v :: a} -> Map Int {i :: Int, v :: a}
+        -> Map Int {i :: Int, v :: a}
+      aggregateEmissionsInMap iv@{i} ivMap = Map.insert i iv ivMap
+
+      filterPartiallyEmitted :: Map Int {i :: Int, v :: a} -> Maybe (List {i :: Int, v :: a })
+      filterPartiallyEmitted ivMap = let values = Map.values ivMap in
+        if List.length values == len then Just values else Nothing
+
+      sortByIndex :: List {i :: Int, v :: a } -> Array {i :: Int, v :: a }
+      sortByIndex = Array.sortWith (_.i) <<< fromFoldable
+
+      foldEmissions :: Array {i :: Int, v :: a } -> b
+      foldEmissions = Array.foldl (\acc {v} -> f v acc) initial
+
+      aggrEv :: AnEvent m (Map Int {i :: Int, v :: a})
+      aggrEv = fold aggregateEmissionsInMap event Map.empty
+
+      foldedEvent :: AnEvent m b
+      foldedEvent = aggrEv
+          # filterMap filterPartiallyEmitted
+            # map (foldEmissions <<< sortByIndex)
+
+  unsubDs <- subscribe foldedEvent downstreamPush
+  unsubAll <- sequence $ mapWithIndex (\i ev -> subscribe ev (\v -> push {i, v})) xs
+  pure $ unsubDs *> sequence_ unsubAll
 
 -- / When an item is emitted by either one of the upstream Events will call `f` to combine the items
 -- / and emit that to downstream
 combineLatest
   :: ∀ a b c m s. MonadST s m => (a -> b -> c) -> AnEvent m a -> AnEvent m b -> AnEvent m c
-combineLatest f e1 e2 = biSampleOn e2 $ f <$> e1
+combineLatest f e1 e2 = f <$> e1 <*> e2
 
 combineLatest3
   :: ∀ a b c d m s
@@ -61,7 +78,7 @@ combineLatest3
   -> AnEvent m b
   -> AnEvent m c
   -> AnEvent m d
-combineLatest3 f e1 e2 e3 = biSampleOn e3 $ biSampleOn e2 (f <$> e1)
+combineLatest3 f e1 e2 e3 = f <$> e1 <*> e2 <*> e3
 
 distinctUntilChanged :: ∀ a m s. Eq a => MonadST s m => AnEvent m a -> AnEvent m a
 distinctUntilChanged = filterMap go <<< withLast
