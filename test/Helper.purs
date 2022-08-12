@@ -8,22 +8,22 @@ import Effect.Class.Console (log)
 import Effect.Ref (Ref)
 import Effect.Ref as Ref
 import FRP.Event (Event, subscribe)
-import Test.Assert (assertEqual', assertTrue')
+import Test.Spec.Assertions (shouldEqual, shouldSatisfy)
 
-assertRef :: ∀ a. String -> Ref a -> (a -> Boolean) -> Effect Unit
-assertRef callsite ref pred = do
+assertRef :: ∀ a. Show a => Ref a -> (a -> Boolean) -> Effect Unit
+assertRef ref pred = do
   value <- Ref.read ref
-  assertTrue' callsite $ pred value
+  shouldSatisfy value pred
 
 printRef :: ∀ a. Show a => Ref a -> Effect Unit
 printRef ref = do
   v <- Ref.read ref
   log $ show v
 
-assertRef' :: ∀ a. Eq a => Show a => String -> Ref a -> a -> Effect Unit
-assertRef' callsite ref value = do
-  value' <- Ref.read ref
-  assertEqual' callsite {actual: value', expected: value}
+assertRef' :: ∀ a. Eq a => Show a => Ref a -> a -> Effect Unit
+assertRef' ref value = do
+  expected <- Ref.read ref
+  shouldEqual value expected
 
 testSubscribe :: ∀ a. Event a
   -> Effect { subscription :: Effect Unit, capturesRef :: Ref (Array a) }

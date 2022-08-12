@@ -3,11 +3,9 @@ module Paraglider.Rx where
 import Prelude
 
 import Control.Monad.ST.Class (class MonadST)
-import Data.Array (fromFoldable, length, mapWithIndex, replicate)
-import Data.Array as Array
+import Data.Array (length, mapWithIndex)
 import Data.Filterable (filterMap)
-import Data.Foldable (class Foldable, for_, sequence_, traverse_)
-import Data.Foldable as Foldable
+import Data.Foldable (for_, sequence_)
 import Data.List (List)
 import Data.List as List
 import Data.Map (Map)
@@ -15,7 +13,6 @@ import Data.Map as Map
 import Data.Maybe (Maybe(..))
 import Data.Traversable (sequence)
 import Data.Tuple (Tuple(..))
-import Debug (spy)
 import FRP.Event (AnEvent, create, fold, keepLatest, makeEvent, mapAccum, subscribe, withLast)
 import Paraglider.DisposingRef as DisposingRef
 import Paraglider.STRefWrapper as RefW
@@ -167,7 +164,7 @@ replay upstream = do
 replayRefCount :: forall a s m. Bind m => MonadST s m => AnEvent m a -> m (AnEvent m a)
 replayRefCount = replay >=> refCount
 
--- / Terminates upstream subscription once the predicate check fails
+-- / Filters until the first predicate check succeeds. Then it emits freely.
 skipWhile :: ∀ a m s. MonadST s m => Applicative m => (a -> Boolean) -> AnEvent m a -> AnEvent m a
 skipWhile f e = filterMap filterF accumEv
   where
