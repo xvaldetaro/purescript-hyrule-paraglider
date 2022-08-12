@@ -38,27 +38,23 @@ combineFold f initial xs = makeEvent \downstreamPush -> do
   {push, event} <- create
   let
       len = length xs
-      aggregateEmissionsInMap :: {i :: Int, v :: a} -> Map Int {i :: Int, v :: a}
-        -> Map Int {i :: Int, v :: a}
-      aggregateEmissionsInMap iv@{i} ivMap = Map.insert i iv ivMap
+      aggregateEmissionsInMap :: {i :: Int, v :: a} -> Map Int a -> Map Int a
+      aggregateEmissionsInMap {i, v} ivMap = Map.insert i v ivMap
 
-      filterPartiallyEmitted :: Map Int {i :: Int, v :: a} -> Maybe (List {i :: Int, v :: a })
+      filterPartiallyEmitted :: Map Int a -> Maybe (List a)
       filterPartiallyEmitted ivMap = let values = Map.values ivMap in
         if List.length values == len then Just values else Nothing
 
-      sortByIndex :: List {i :: Int, v :: a } -> Array {i :: Int, v :: a }
-      sortByIndex = Array.sortWith (_.i) <<< fromFoldable
+      foldEmissions :: List a -> b
+      foldEmissions = List.foldl (\acc v -> f v acc) initial
 
-      foldEmissions :: Array {i :: Int, v :: a } -> b
-      foldEmissions = Array.foldl (\acc {v} -> f v acc) initial
-
-      aggrEv :: AnEvent m (Map Int {i :: Int, v :: a})
+      aggrEv :: AnEvent m (Map Int a)
       aggrEv = fold aggregateEmissionsInMap event Map.empty
 
       foldedEvent :: AnEvent m b
       foldedEvent = aggrEv
           # filterMap filterPartiallyEmitted
-            # map (foldEmissions <<< sortByIndex)
+            # map foldEmissions
 
   unsubDs <- subscribe foldedEvent downstreamPush
   unsubAll <- sequence $ mapWithIndex (\i ev -> subscribe ev (\v -> push {i, v})) xs

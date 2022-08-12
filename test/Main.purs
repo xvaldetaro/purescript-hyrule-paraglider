@@ -73,7 +73,6 @@ testSkipWhile = do
 testCombineFold :: Effect Unit
 testCombineFold = do
   {event, push} <- create
-  -- {push: p2} <- create
   t <- testSubscribe $ combineFold (flip snoc) [] [pure 1, pure 2, event, pure 10]
   push 3
   push 4
