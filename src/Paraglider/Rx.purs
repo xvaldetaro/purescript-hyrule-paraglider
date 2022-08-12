@@ -45,7 +45,7 @@ combineFold f initial xs =
       mapper :: AnEvent m b -> AnEvent m a -> AnEvent m b
       mapper = \accEvent ev -> biSampleOn accEvent $ f <$> ev
   in
-  Foldable.foldl (mapper) (bang initial) xs
+  Foldable.foldl (mapper) (pure initial) xs
 
 -- / When an item is emitted by either one of the upstream Events will call `f` to combine the items
 -- / and emit that to downstream
@@ -69,7 +69,7 @@ distinctUntilChanged = filterMap go <<< withLast
     go {now, last} = if (Just now) == last then Nothing else Just now
 
 -- / Calls `work` on every emission. `work` is a callback that receives the emitted a as argument. `work`'s return is an Effectful computation
-doOnNext :: ∀ m a. Apply m => Bind m => (a -> m Unit) -> AnEvent m a -> AnEvent m a
+doOnNext :: ∀ m a. Bind m => (a -> m Unit) -> AnEvent m a -> AnEvent m a
 doOnNext work upstream = makeEvent \downstreamPush -> do
   subscribe upstream \a -> do
     work a
@@ -96,6 +96,13 @@ flatMap f e = makeEvent \k -> do
     innerDisposable <- subscribe (f a) k
     DisposingRef.addSub disposingRef innerDisposable
   pure $ upstreamDisposable *> DisposingRef.dispose disposingRef
+
+-- / Calls `work` on every emission. `work` is a callback that receives the emitted a as argument. `work`'s return is an Effectful computation
+mapEffectful :: ∀ s m a b. MonadST s m => (a -> m b) -> AnEvent m a -> AnEvent m b
+mapEffectful  work upstream = makeEvent \downstreamPush -> do
+  subscribe upstream \a -> do
+    b <- work a
+    downstreamPush b
 
 -- / Creates 1 upstream subscription for N downstream subscribers. The upstream subscription is
 -- / started when the first downstream subscription happens. The upstream subscription is terminated

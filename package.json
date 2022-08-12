@@ -3,22 +3,16 @@
   "version": "1.0.0",
   "description": "Navigate Hyrule with Rx operators and Utils",
   "main": "index.js",
-  "directories": {
-    "test": "spago -x test/test.dhall test"
-  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "spago -x test/test.dhall test"
   },
   "keywords": [
     "purescript",
     "rxjs",
-    "halogen"
+    "deku"
   ],
   "author": "Alexandre Valdetaro",
   "license": "MIT",
   "devDependencies": {
-    "purescript": "^0.15.0",
-    "purs-tidy": "^0.7.2",
-    "spago": "^0.20.8"
   }
 }
