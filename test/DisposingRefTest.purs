@@ -7,7 +7,7 @@ import Effect.Aff (Aff, Milliseconds(..), forkAff, joinFiber)
 import Effect.Aff as Aff
 import Effect.Class (liftEffect)
 import Effect.Ref as Ref
-import Paraglider.DisposingRef as DRef
+import Paraglider.Util.DisposingRef as DRef
 import Test.Helper (assertRef')
 
 test :: Aff Unit
