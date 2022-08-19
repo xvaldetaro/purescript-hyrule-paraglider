@@ -4,6 +4,7 @@ import Prelude
 
 import Control.Monad.ST.Class (class MonadST)
 import Data.Array (length, mapWithIndex)
+import Data.Either (Either(..))
 import Data.Filterable (filterMap)
 import Data.Foldable (for_, sequence_)
 import Data.List (List)
@@ -13,7 +14,9 @@ import Data.Map as Map
 import Data.Maybe (Maybe(..))
 import Data.Traversable (sequence)
 import Data.Tuple (Tuple(..))
-import FRP.Event (AnEvent, create, fold, keepLatest, makeEvent, mapAccum, subscribe, withLast)
+import Effect (Effect)
+import Effect.Exception (Error)
+import FRP.Event (AnEvent, Event, create, fold, keepLatest, makeEvent, mapAccum, subscribe, withLast)
 import Paraglider.DisposingRef as DisposingRef
 import Paraglider.STRefWrapper as RefW
 
@@ -222,3 +225,21 @@ toClosure upstreamEffect closure = makeEvent \downstreamPush -> do
   upstream <- upstreamEffect
   downstreamPush (closure upstream)
   pure (pure unit)
+
+-- interop
+
+data Observable :: forall k. k -> Type
+data Observable a
+
+foreign import observableToEventImpl :: forall a. (Error -> Effect Unit) -> (a -> Effect Unit) -> Observable a -> Effect (Effect Unit)
+
+observableToEvent :: forall a. Observable a -> Event (Either Error a)
+observableToEvent o = makeEvent \k ->
+  observableToEventImpl (Left >>> k) (Right >>> k) o
+
+foreign import eventToObservableImpl :: forall a. ((Error -> Effect Unit) -> (a -> Effect Unit) -> Effect (Effect Unit)) -> Observable a
+
+eventToObservable :: forall a. Event (Either Error a) -> Observable a
+eventToObservable e = eventToObservableImpl \errF resF -> subscribe e case _ of
+  Left err -> errF err
+  Right res -> resF res
