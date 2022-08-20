@@ -12,8 +12,8 @@ import Paraglider.Operator.RefCount (refCount)
 import Paraglider.Operator.ToConnectable (toConnectable)
 import Paraglider.Util.STRefWrapper as RefW
 
--- / Once upstream is connected it will cache the last emitted value from upstream. Any downstream
--- / subscribers will get an immediate emission of the last cached value upon subscription (if any)
+-- | Once upstream is connected it will cache the last emitted value from upstream. Any downstream
+-- | subscribers will get an immediate emission of the last cached value upon subscription (if any)
 replay :: ∀ a m s. MonadST s m => AnEvent m a -> m (ConnectableEvent m a)
 replay upstream = do
   lastEmissionRef <- RefW.new Nothing
@@ -33,6 +33,6 @@ replay upstream = do
 
   pure { connect: connectWithWriting, event: withReplay }
 
--- / Just composing replay and refCount
+-- | Just composing replay and refCount
 replayRefCount :: forall a s m. Bind m => MonadST s m => AnEvent m a -> m (AnEvent m a)
 replayRefCount = replay >=> refCount

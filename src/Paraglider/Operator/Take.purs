@@ -8,7 +8,7 @@ import FRP.Event (AnEvent, makeEvent, subscribe)
 import Paraglider.Util.DisposingRef as DisposingRef
 import Paraglider.Util.STRefWrapper as RefW
 
--- / Terminates upstream subscription after `n` emissions
+-- | Terminates upstream subscription after `n` emissions
 take :: ∀ a m s. MonadST s m => Applicative m => Int -> AnEvent m a -> AnEvent m a
 take n e = makeEvent \k -> do
   subRef <- DisposingRef.create
@@ -22,7 +22,7 @@ take n e = makeEvent \k -> do
   DisposingRef.addSub subRef sub
   pure $ DisposingRef.dispose subRef
 
--- / Terminates upstream subscription once the predicate check fails
+-- | Terminates upstream subscription once the predicate check fails
 takeWhile :: ∀ a b m s. MonadST s m => Applicative m => (a -> Maybe b) -> AnEvent m a -> AnEvent m b
 takeWhile f e = makeEvent \k -> do
   subRef <- DisposingRef.create
@@ -33,6 +33,6 @@ takeWhile f e = makeEvent \k -> do
   DisposingRef.addSub subRef sub
   pure $ DisposingRef.dispose subRef
 
--- / Terminates upstream subscription once the predicate check fails
+-- | Terminates upstream subscription once the predicate check fails
 takeWhile' :: ∀ a m s. MonadST s m => Applicative m => (a -> Boolean) -> AnEvent m a -> AnEvent m a
 takeWhile' f e = takeWhile (\x -> if f x then Just x else Nothing) e

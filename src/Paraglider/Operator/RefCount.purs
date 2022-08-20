@@ -11,9 +11,9 @@ import Paraglider.Operator.DoOnSubscribe (doOnSubscribe)
 import Paraglider.Operator.DoOnUnsubscribe (doOnUnsubscribe)
 import Paraglider.Util.STRefWrapper as RefW
 
--- / Creates 1 upstream subscription for N downstream subscribers. The upstream subscription is
--- / started when the first downstream subscription happens. The upstream subscription is terminated
--- / when the last downstream subscription is terminated.
+-- | Creates 1 upstream subscription for N downstream subscribers. The upstream subscription is
+-- | started when the first downstream subscription happens. The upstream subscription is terminated
+-- | when the last downstream subscription is terminated.
 refCount :: ∀ a m s. MonadST s m => ConnectableEvent m a -> m (AnEvent m a)
 refCount { connect, event } = do
   subCountRef <- RefW.new 0

@@ -10,8 +10,8 @@ import Effect.Ref as Effect.Ref
 import Effect.Timer (clearTimeout, setTimeout)
 import FRP.Event (Event, subscribe)
 
--- / Subscribes to upstream for `ms` and aggregate emissions. Once `ms` is passed will unsubscribe
--- / to upstream and Push the aggregated result into the returned Aff
+-- | Subscribes to upstream for `ms` and aggregate emissions. Once `ms` is passed will unsubscribe
+-- | to upstream and Push the aggregated result into the returned Aff
 collectEventToAff :: forall a. Milliseconds -> Event a -> Aff (Array a)
 collectEventToAff (Milliseconds ms) e = makeAff \k -> do
   c <- Effect.Ref.new []

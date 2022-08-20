@@ -2,19 +2,13 @@ module Paraglider.Operator.MakeEventAff where
 
 import Prelude
 
-import Data.Array (length, snoc)
 import Data.Either (Either(..))
-import Data.Filterable (filter)
-import Data.Int (round)
 import Effect (Effect)
-import Effect.Aff (Aff, Canceler(..), Milliseconds(..), error, joinFiber, killFiber, launchAff, launchAff_, makeAff, try)
+import Effect.Aff (Aff, error, joinFiber, killFiber, launchAff, launchAff_, try)
 import Effect.Class (liftEffect)
-import Effect.Ref as Effect.Ref
-import Effect.Timer (clearTimeout, setTimeout)
-import FRP.Event (AnEvent, Event, makeEvent, subscribe)
-import FRP.Event.Class (fold)
+import FRP.Event (Event, makeEvent)
 
--- / A version of makeEvent that operates on Aff instead of Effect
+-- | A version of makeEvent that operates on Aff instead of Effect
 makeEventAff :: ∀ a. ((a -> Effect Unit) -> Aff (Effect Unit)) -> Event a
 makeEventAff cb = makeEvent \k -> do
   fiber <- launchAff $ cb k

@@ -8,7 +8,7 @@ import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple(..))
 import FRP.Event (AnEvent, mapAccum)
 
--- / Filters until the first predicate check succeeds. Then it emits freely.
+-- | Filters until the first predicate check succeeds. Then it emits freely.
 skipWhile :: ∀ a m s. MonadST s m => Applicative m => (a -> Boolean) -> AnEvent m a -> AnEvent m a
 skipWhile f e = filterMap filterF accumEv
   where

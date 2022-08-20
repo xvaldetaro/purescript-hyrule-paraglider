@@ -17,12 +17,12 @@ import FRP.Event (AnEvent, create, fold, makeEvent, subscribe)
 combineFold' :: ∀ b m s . MonadST s m => Monoid b => Array (AnEvent m b) -> AnEvent m b
 combineFold' = combineFold append mempty
 
--- / Folds over the **last** emissions from upstream events, emits the folded result to downstream.
--- /
--- / Notice that this is different from `folded`. In `folded` we keep folding over every upstream
--- / emission since the start. Effectively making all upstream emissions (including previous emissions)
--- / partof the fold. Whereas in `combineFold` we fold over the **last** round of emissions from
--- / upstream only.
+-- | Folds over the **last** emissions from upstream events, emits the folded result to downstream.
+-- |
+-- | Notice that this is different from `folded`. In `folded` we keep folding over every upstream
+-- | emission since the start. Effectively making all upstream emissions (including previous emissions)
+-- | partof the fold. Whereas in `combineFold` we fold over the **last** round of emissions from
+-- | upstream only.
 combineFold :: ∀ a b m s . MonadST s m => (a -> b -> b) -> b -> Array (AnEvent m a) -> AnEvent m b
 combineFold f initial xs = makeEvent \downstreamPush -> do
   {push, event} <- create
@@ -50,8 +50,8 @@ combineFold f initial xs = makeEvent \downstreamPush -> do
   unsubAll <- sequence $ mapWithIndex (\i ev -> subscribe ev (\v -> push {i, v})) xs
   pure $ unsubDs *> sequence_ unsubAll
 
--- / When an item is emitted by either one of the upstream Events will call `f` to combine the items
--- / and emit that to downstream
+-- | When an item is emitted by either one of the upstream Events will call `f` to combine the items
+-- | and emit that to downstream
 combineLatest
   :: ∀ a b c m s. MonadST s m => (a -> b -> c) -> AnEvent m a -> AnEvent m b -> AnEvent m c
 combineLatest f e1 e2 = f <$> e1 <*> e2
