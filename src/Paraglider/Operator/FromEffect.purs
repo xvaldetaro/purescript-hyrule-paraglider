@@ -2,10 +2,8 @@ module Paraglider.Operator.FromEffect where
 
 import Prelude
 
-import FRP.Event (AnEvent, makeEvent)
+import Effect (Effect)
+import FRP.Event (Event, makeEvent)
 
-fromEffect :: ∀ a m. Monad m => m a -> AnEvent m a
-fromEffect effect = makeEvent \k -> do
-  emission <- effect
-  k emission
-  pure $ pure unit
+fromEffect :: Effect ~> Event
+fromEffect e = makeEvent \k -> (e >>= k) *> pure (pure unit)
