@@ -3,8 +3,8 @@ module Test.Main where
 import Prelude
 
 import Control.Alt ((<|>))
-import Data.Array (snoc)
-import Data.Foldable (oneOfMap)
+import Data.Array (length, snoc)
+import Data.Foldable (oneOfMap, sequence_)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Effect.Aff (Milliseconds(..), launchAff_)
@@ -21,10 +21,12 @@ import Paraglider.Operator.FromCallable (fromCallable)
 import Paraglider.Operator.Replay (replayRefCount)
 import Paraglider.Operator.SkipWhile (skipWhile)
 import Paraglider.Operator.Take (take, takeWhile)
+import Paraglider.Operator.WithUnsubscribe (withUnsubscribe)
 import Test.Assert (assertEqual')
 import Test.DisposingRefTest as DisposingRefTest
 import Test.Helper (assertRef', testSubscribe)
 import Test.Spec (describe, it)
+import Test.Spec.Assertions (shouldEqual)
 import Test.Spec.Reporter (consoleReporter)
 import Test.Spec.Runner (runSpec)
 
@@ -157,6 +159,17 @@ main = launchAff_ $ runSpec [ consoleReporter ] do
       push 1
       assertRef' t.capturesRef [1,1,1]
 
+  describe "withUnsubscribe" do
+    it "should pass the unsubscribe function in the event" $ liftEffect do
+      {event, push} <- create
+      t <- testSubscribe (_.unsubscribe <$> withUnsubscribe event)
+      push 1
+      push 1
+      push 1
+      Ref.read t.capturesRef >>= sequence_
+      push 1
+      push 1
+      (length <$> Ref.read t.capturesRef) >>= (_ `shouldEqual` 3)
   describe "combineLatest" do
     it "should combine upstream emissions with provided combiner f" $ liftEffect do
       {event, push} <- create
