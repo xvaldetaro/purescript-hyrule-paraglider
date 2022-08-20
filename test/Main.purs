@@ -20,6 +20,7 @@ import Paraglider.Operator.FromAff (fromAff)
 import Paraglider.Operator.FromCallable (fromCallable)
 import Paraglider.Operator.Replay (replayRefCount)
 import Paraglider.Operator.SkipWhile (skipWhile)
+import Paraglider.Operator.StartingWith (startingWith)
 import Paraglider.Operator.Take (take, takeWhile)
 import Test.Assert (assertEqual')
 import Test.DisposingRefTest as DisposingRefTest
@@ -157,6 +158,14 @@ main = launchAff_ $ runSpec [ consoleReporter ] do
       push 1
       assertRef' t.capturesRef [1,1,1]
 
+  describe "startingWith" do
+    it "starts with a value" $ liftEffect do
+      {event, push} <- create
+      t <- testSubscribe (startingWith 42 event)
+      push 1
+      t.subscription
+      assertRef' t.capturesRef [42,1]
+      
   describe "combineLatest" do
     it "should combine upstream emissions with provided combiner f" $ liftEffect do
       {event, push} <- create
