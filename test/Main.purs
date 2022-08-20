@@ -3,7 +3,6 @@ module Test.Main where
 import Prelude
 
 import Control.Alt ((<|>))
-import Data.Array (snoc)
 import Data.Foldable (oneOfMap)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
@@ -14,7 +13,7 @@ import Effect.Class.Console (log)
 import Effect.Ref as Ref
 import FRP.Event (create)
 import Paraglider.Operator.BlockingGetN (blockingGetN)
-import Paraglider.Operator.Combine (combineFold, combineLatest)
+import Paraglider.Operator.CombineLatest (combineLatest)
 import Paraglider.Operator.FlatMap (flatMap)
 import Paraglider.Operator.FromAff (fromAff)
 import Paraglider.Operator.FromCallable (fromCallable)
@@ -31,7 +30,6 @@ import Test.Spec.Runner (runSpec)
   -- testFlatMap
   -- testTakeWhile
   -- testSkipWhile
-  -- testCombineFold
   -- testRefCount
   -- DisposingRefTest.test
   -- testCombineLatest
@@ -77,16 +75,6 @@ main = launchAff_ $ runSpec [ consoleReporter ] do
       push 4
       push 1
       assertRef' t.capturesRef [4,1]
-
-  describe "combineFold" do
-    it "should fold only after all upstream emitted" $ liftEffect do
-      {event, push} <- create
-      t <- testSubscribe $ combineFold (flip snoc) [] [pure 1, pure 2, event, pure 10]
-      push 3
-      push 4
-      t.subscription
-      push 5
-      assertRef' t.capturesRef [[1,2,3,10], [1,2,4,10]]
 
   describe "refCount" do
     it "should keep a single sub to upstream while there is a ds sub" $ liftEffect do
