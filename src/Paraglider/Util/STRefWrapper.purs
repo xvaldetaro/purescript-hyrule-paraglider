@@ -1,4 +1,4 @@
-module Paraglider.STRefWrapper where
+module Paraglider.Util.STRefWrapper where
 
 import Prelude
 

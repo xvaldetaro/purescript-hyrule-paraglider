@@ -2,11 +2,13 @@
 
 # Paraglider makes it easier to explore Hyrule
 
+Check out the [Examples page](https://xvaldetaro.github.io/purescript-hyrule-paraglider/) built with [Deku](https://github.com/mikesol/purescript-deku)
+
 Provides:
-* Collection of Rx-inpired Operators for [hyrule](https://github.com/mikesol/purescript-hyrule)'s FRP.Event and [halogen-subscriptions](https://github.com/purescript-halogen/purescript-halogen-subscriptions)'s Emitter
+* Collection of Rx-inpired Operators for [hyrule](https://github.com/mikesol/purescript-hyrule)'s `FRP.Event`
 * Few methods to help interop `Event` and `Aff`.
 
 Refer to [Rx's documentation](https://reactivex.io/documentation/operators.html) for the similar methods to understand the functionality (specially marble diagrams)
 
 ### Examples
-Simple [Examples](https://github.com/xvaldetaro/purescript-hyrule-paraglider/blob/main/test/Main.purs) for each operator
+Check out the [Tests](https://github.com/xvaldetaro/purescript-hyrule-paraglider/blob/main/test/Main.purs) for simple examples of each operator.

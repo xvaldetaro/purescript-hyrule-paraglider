@@ -1,13 +1,13 @@
-module Paraglider.DisposingRef (create, addSub, dispose, DisposingRef) where
+module Paraglider.Util.DisposingRef (create, addSub, dispose, DisposingRef) where
 
 import Prelude
 
 import Control.Monad.ST.Class (class MonadST, liftST)
 import Control.Monad.ST.Internal (STRef)
-import Paraglider.STRefWrapper as RefW
+import Paraglider.Util.STRefWrapper as RefW
 
--- / DisposingRef is like a Ref that holds a Subscription, but if you call dispose and then afterward try
--- / to add the Subscription it disposes of the Subscription immediately.
+-- | DisposingRef is like a Ref that holds a Subscription, but if you call dispose and then afterward try
+-- | to add the Subscription it disposes of the Subscription immediately.
 newtype DisposingRef s subM = DisposingRef (STRef s {isDisposed :: Boolean, work :: subM Unit})
 
 create :: ∀ s subM. MonadST s subM => Applicative subM => subM (DisposingRef s subM)
