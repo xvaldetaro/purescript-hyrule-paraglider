@@ -24,6 +24,7 @@ import Paraglider.Operator.Take (take, takeWhile)
 import Test.Assert (assertEqual')
 import Test.DisposingRefTest as DisposingRefTest
 import Test.Helper (assertRef', testSubscribe)
+import Test.Rx (testRx)
 import Test.Spec (describe, it)
 import Test.Spec.Reporter (consoleReporter)
 import Test.Spec.Runner (runSpec)
@@ -43,6 +44,7 @@ import Test.Spec.Runner (runSpec)
 
 main :: Effect Unit
 main = launchAff_ $ runSpec [ consoleReporter ] do
+  testRx
   describe "Flat Map" do
     it "should emit from all upstream sources" $ liftEffect do
       {event, push} <- create

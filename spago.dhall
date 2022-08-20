@@ -15,6 +15,7 @@ to generate this file without the comments in this block.
   , "arrays"
   , "effect"
   , "either"
+  , "exceptions"
   , "filterable"
   , "foldable-traversable"
   , "hyrule"
