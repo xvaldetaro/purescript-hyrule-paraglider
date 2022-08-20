@@ -17,14 +17,16 @@ import Paraglider.Operator.BlockingGetN (blockingGetN)
 import Paraglider.Operator.Combine (combineFold, combineLatest)
 import Paraglider.Operator.FlatMap (flatMap)
 import Paraglider.Operator.FromAff (fromAff)
-import Paraglider.Operator.FromCallable (fromCallable)
+import Paraglider.Operator.FromEffect (fromEffect)
 import Paraglider.Operator.Replay (replayRefCount)
 import Paraglider.Operator.SkipWhile (skipWhile)
+import Paraglider.Operator.StartingWith (startingWith)
 import Paraglider.Operator.Take (take, takeWhile)
 import Paraglider.Operator.WithUnsubscribe (withUnsubscribe)
 import Test.Assert (assertEqual')
 import Test.DisposingRefTest as DisposingRefTest
 import Test.Helper (assertRef', testSubscribe)
+import Test.Rx (testRx)
 import Test.Spec (describe, it)
 import Test.Spec.Assertions (shouldEqual)
 import Test.Spec.Reporter (consoleReporter)
@@ -45,6 +47,7 @@ import Test.Spec.Runner (runSpec)
 
 main :: Effect Unit
 main = launchAff_ $ runSpec [ consoleReporter ] do
+  testRx
   describe "Flat Map" do
     it "should emit from all upstream sources" $ liftEffect do
       {event, push} <- create
@@ -138,9 +141,9 @@ main = launchAff_ $ runSpec [ consoleReporter ] do
       Aff.delay $ Milliseconds 6.0
       liftEffect $ assertRef' capturesRef []
 
-  describe "fromCallable" do
+  describe "fromEffect" do
     it "should pipe the return from Effect into the Event" $ liftEffect do
-      let fromCallableEmitter = fromCallable (pure 100)
+      let fromCallableEmitter = fromEffect (pure 100)
       t1 <- testSubscribe (pure 3)
       t2 <- testSubscribe fromCallableEmitter
       assertRef' t1.capturesRef [3]
@@ -170,6 +173,15 @@ main = launchAff_ $ runSpec [ consoleReporter ] do
       push 1
       push 1
       (length <$> Ref.read t.capturesRef) >>= (_ `shouldEqual` 3)
+
+  describe "startingWith" do
+    it "starts with a value" $ liftEffect do
+      {event, push} <- create
+      t <- testSubscribe (startingWith 42 event)
+      push 1
+      t.subscription
+      assertRef' t.capturesRef [42,1]
+      
   describe "combineLatest" do
     it "should combine upstream emissions with provided combiner f" $ liftEffect do
       {event, push} <- create
