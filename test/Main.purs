@@ -17,7 +17,7 @@ import Paraglider.Operator.BlockingGetN (blockingGetN)
 import Paraglider.Operator.Combine (combineFold, combineLatest)
 import Paraglider.Operator.FlatMap (flatMap)
 import Paraglider.Operator.FromAff (fromAff)
-import Paraglider.Operator.FromCallable (fromCallable)
+import Paraglider.Operator.FromEffect (fromEffect)
 import Paraglider.Operator.Replay (replayRefCount)
 import Paraglider.Operator.SkipWhile (skipWhile)
 import Paraglider.Operator.Take (take, takeWhile)
@@ -136,9 +136,9 @@ main = launchAff_ $ runSpec [ consoleReporter ] do
       Aff.delay $ Milliseconds 6.0
       liftEffect $ assertRef' capturesRef []
 
-  describe "fromCallable" do
+  describe "fromEffect" do
     it "should pipe the return from Effect into the Event" $ liftEffect do
-      let fromCallableEmitter = fromCallable (pure 100)
+      let fromCallableEmitter = fromEffect (pure 100)
       t1 <- testSubscribe (pure 3)
       t2 <- testSubscribe fromCallableEmitter
       assertRef' t1.capturesRef [3]
