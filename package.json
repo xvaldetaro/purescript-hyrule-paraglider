@@ -5,8 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "spago -x test/test.dhall test",
-    "build-pages": "spago -x pages/pages.dhall build",
-    "start": "npm run build-pages && webpack serve --open"
+    "build-pages": "npm run spago-pages && webpack",
+    "spago-pages": "spago -x pages/pages.dhall build",
+    "start": "npm run spago-pages && webpack serve --open"
   },
   "keywords": [
     "purescript",
@@ -28,8 +29,6 @@
     "postcss-preset-env": "^7.5.0",
     "postcss": "^8.4.14",
     "style-loader": "^3.3.1",
-    "tailwind": "^4.0.0",
-    "tailwindcss": "^3.1.6",
     "webpack": "^5.73.0",
     "webpack-cli": "^4.9.2",
     "webpack-dev-server": "^4.8.1"
