@@ -102,4 +102,39 @@ let upstream =
       https://raw.githubusercontent.com/purescript/package-sets/2d448b3cb24b7c7a1506a4e1ffaf0047af8a3304/src/packages.dhall
         sha256:1046637437530f8ca29fe960170c874250fc561d96eddac7242137e096e0e59c
 
-in  upstream
+let additions =
+      { hyrule =
+        { dependencies =
+          [ "arrays"
+          , "control"
+          , "datetime"
+          , "effect"
+          , "either"
+          , "filterable"
+          , "foldable-traversable"
+          , "js-timers"
+          , "lists"
+          , "maybe"
+          , "monoid-extras"
+          , "newtype"
+          , "now"
+          , "ordered-collections"
+          , "partial"
+          , "prelude"
+          , "profunctor"
+          , "record"
+          , "refs"
+          , "st"
+          , "tuples"
+          , "unsafe-coerce"
+          , "unsafe-reference"
+          , "web-events"
+          , "web-html"
+          , "web-uievents"
+          ]
+        , repo = "https://github.com/mikesol/purescript-hyrule.git"
+        , version = "master"
+        }
+      }
+
+in  upstream // additions
