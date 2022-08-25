@@ -15,6 +15,7 @@ import Effect.Ref as Ref
 import FRP.Event (create)
 import Paraglider.Operator.BlockingGetN (blockingGetN)
 import Paraglider.Operator.Combine (combineFold, combineLatest)
+import Paraglider.Operator.DistinctUntilChanged (distinctUntilChanged, distinctUntilChangedBy, distinctUntilChangedF)
 import Paraglider.Operator.FlatMap (flatMap)
 import Paraglider.Operator.FromAff (fromAff)
 import Paraglider.Operator.FromEffect (fromEffect)
@@ -29,19 +30,6 @@ import Test.Rx (testRx)
 import Test.Spec (describe, it)
 import Test.Spec.Reporter (consoleReporter)
 import Test.Spec.Runner (runSpec)
-
-  -- testFlatMap
-  -- testTakeWhile
-  -- testSkipWhile
-  -- testCombineFold
-  -- testRefCount
-  -- DisposingRefTest.test
-  -- testCombineLatest
-  -- testBangs
-  -- testTake
-  -- launchAff_ do
-  --   testFromAff
-  --   testBlocking
 
 main :: Effect Unit
 main = launchAff_ $ runSpec [ consoleReporter ] do
@@ -60,6 +48,27 @@ main = launchAff_ $ runSpec [ consoleReporter ] do
       push (pure 8)
       innerPush 9
       assertRef' t.capturesRef [1,2,3,4,5,6,7,8,9]
+
+  describe "distinctUntilChanged" do
+    it "should dedup consecutive emissions" $ liftEffect do
+      {event, push} <- create
+      t <- testSubscribe $ distinctUntilChanged event
+      tb <- testSubscribe $ distinctUntilChangedBy (_.n) event
+      tf <- testSubscribe $ distinctUntilChangedF (\l c -> l.n == c.n) event
+      push {n: 0, s: "a"}
+      push {n: 0, s: "a"}
+      push {n: 1, s: "a"}
+      push {n: 0, s: "a"}
+      push {n: 1, s: "a"}
+      push {n: 1, s: "a"}
+      push {n: 2, s: "a"}
+      assertRef' t.capturesRef
+        [{n: 0, s: "a"}, {n: 1, s: "a"}, {n: 0, s: "a"}, {n: 1, s: "a"}, {n: 2, s: "a"}]
+      assertRef' tb.capturesRef
+        [{n: 0, s: "a"}, {n: 1, s: "a"}, {n: 0, s: "a"}, {n: 1, s: "a"}, {n: 2, s: "a"}]
+      assertRef' tf.capturesRef
+        [{n: 0, s: "a"}, {n: 1, s: "a"}, {n: 0, s: "a"}, {n: 1, s: "a"}, {n: 2, s: "a"}]
+
 
   describe "takeWhile" do
     it "should stop upstream subscription after n" $ liftEffect do
@@ -167,7 +176,7 @@ main = launchAff_ $ runSpec [ consoleReporter ] do
       push 1
       t.subscription
       assertRef' t.capturesRef [42,1]
-      
+
   describe "combineLatest" do
     it "should combine upstream emissions with provided combiner f" $ liftEffect do
       {event, push} <- create

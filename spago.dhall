@@ -13,6 +13,7 @@ to generate this file without the comments in this block.
 , dependencies =
   [ "aff"
   , "arrays"
+  , "control"
   , "effect"
   , "either"
   , "exceptions"
