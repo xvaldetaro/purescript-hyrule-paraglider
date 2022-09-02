@@ -2,13 +2,12 @@ module Paraglider.Operator.FlatMap where
 
 import Prelude
 
-import Control.Monad.ST.Class (class MonadST)
-import FRP.Event (AnEvent, makeEvent, subscribe)
+import FRP.Event (Event, makeLemmingEvent)
 import Paraglider.Util.DisposingRef as DisposingRef
 
 -- | Flatten a nested `Event`, reporting values only from the all inner Events.
-flatMap :: ∀ s m a b. MonadST s m => (a -> AnEvent m b) -> AnEvent m a -> AnEvent m b
-flatMap f e = makeEvent \k -> do
+flatMap :: ∀ a b. (a -> Event b) -> Event a -> Event b
+flatMap f e = makeLemmingEvent \subscribe k -> do
   disposingRef <- DisposingRef.create
   upstreamDisposable <- subscribe e \a -> do
     innerDisposable <- subscribe (f a) k

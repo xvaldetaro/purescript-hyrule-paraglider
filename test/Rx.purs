@@ -7,7 +7,7 @@ import Data.Either (Either(..))
 import Data.Traversable (sequence)
 import Effect.Class (liftEffect)
 import Effect.Ref (modify_, new, read)
-import FRP.Event (create, makeEvent, subscribe)
+import FRP.Event (create, makeLemmingEvent, subscribe)
 import Paraglider.Rx (eventToObservable, observableToEvent)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (fail, shouldEqual)
@@ -18,7 +18,7 @@ testRx = describe "Rx" do
     r <- new []
     { push, event } <- create
     let
-      withUnsub = makeEvent \k -> do
+      withUnsub = makeLemmingEvent \k -> do
         o <- subscribe event k
         pure (modify_ (cons $ Right 42) r *> o)
     u <- subscribe (observableToEvent (eventToObservable withUnsub)) \k -> modify_ (cons k) r
