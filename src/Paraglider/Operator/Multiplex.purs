@@ -21,12 +21,18 @@ import Record (insert, get)
 import Record as Record
 import Type.Proxy (Proxy(..))
 
+-- | Multiplexing is a method by which multiple signals are combined into one signal over a shared medium.
+-- |
+-- | Converts an "Record of Events" into a "Event of a Record"
+-- | E.g. {a :: Event Int, b....} would become Event { a :: Int, b.... }
 multiplex :: ∀ recordOfEvents eventOfRecord
   . HFoldlWithIndex Multiplex (Event (Record ())) recordOfEvents eventOfRecord
   => recordOfEvents
   -> eventOfRecord
 multiplex e = hfoldlWithIndex Multiplex (pure {} :: Event {}) e
 
+-- | Converts an "Event of a Record" into a "Record of Events".
+-- | E.g. an Event { a :: Int, b.... } would become {a :: Event Int, b....}
 demultiplex :: forall r i o. RowToList i r => UberPartition r i o => Event { | i } -> { | o }
 demultiplex = uberPartition (Proxy :: _ r)
 
