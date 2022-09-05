@@ -2,15 +2,14 @@ module Paraglider.Operator.Take where
 
 import Prelude
 
-import Control.Monad.ST.Class (class MonadST)
 import Data.Maybe (Maybe(..))
-import FRP.Event (AnEvent, makeEvent, subscribe)
+import FRP.Event (Event, makeLemmingEvent)
 import Paraglider.Util.DisposingRef as DisposingRef
 import Paraglider.Util.STRefWrapper as RefW
 
 -- | Terminates upstream subscription after `n` emissions
-take :: ∀ a m s. MonadST s m => Applicative m => Int -> AnEvent m a -> AnEvent m a
-take n e = makeEvent \k -> do
+take :: ∀ a. Int -> Event a -> Event a
+take n e = makeLemmingEvent \subscribe k -> do
   subRef <- DisposingRef.create
   countRef <- RefW.new n
   sub <- subscribe e \a -> do
@@ -23,8 +22,8 @@ take n e = makeEvent \k -> do
   pure $ DisposingRef.dispose subRef
 
 -- | Terminates upstream subscription once the predicate check fails
-takeWhile :: ∀ a b m s. MonadST s m => Applicative m => (a -> Maybe b) -> AnEvent m a -> AnEvent m b
-takeWhile f e = makeEvent \k -> do
+takeWhile :: ∀ a b. (a -> Maybe b) -> Event a -> Event b
+takeWhile f e = makeLemmingEvent \subscribe k -> do
   subRef <- DisposingRef.create
   sub <- subscribe e \a -> do
     case f a of
@@ -34,5 +33,5 @@ takeWhile f e = makeEvent \k -> do
   pure $ DisposingRef.dispose subRef
 
 -- | Terminates upstream subscription once the predicate check fails
-takeWhile' :: ∀ a m s. MonadST s m => Applicative m => (a -> Boolean) -> AnEvent m a -> AnEvent m a
+takeWhile' :: ∀ a. (a -> Boolean) -> Event a -> Event a
 takeWhile' f e = takeWhile (\x -> if f x then Just x else Nothing) e

@@ -8,7 +8,7 @@ import Effect.Aff (Aff, error, joinFiber, killFiber, launchAff, launchAff_, try)
 import Effect.Class (liftEffect)
 import FRP.Event (Event, makeEvent)
 
--- | A version of makeEvent that operates on Aff instead of Effect
+-- | A version of makeLemmingEvent that operates on Aff instead of Effect
 makeEventAff :: ∀ a. ((a -> Effect Unit) -> Aff (Effect Unit)) -> Event a
 makeEventAff cb = makeEvent \k -> do
   fiber <- launchAff $ cb k

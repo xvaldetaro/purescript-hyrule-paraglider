@@ -5,7 +5,9 @@ import Prelude
 import Control.Alt ((<|>))
 import Data.Array (snoc)
 import Data.Foldable (oneOfMap)
+import Data.Map as Map
 import Data.Maybe (Maybe(..))
+import Data.Tuple (Tuple(..))
 import Effect (Effect)
 import Effect.Aff (Milliseconds(..), launchAff_)
 import Effect.Aff as Aff
@@ -15,10 +17,13 @@ import Effect.Ref as Ref
 import FRP.Event (create)
 import Paraglider.Operator.BlockingGetN (blockingGetN)
 import Paraglider.Operator.Combine (combineFold, combineLatest)
+import Paraglider.Operator.DiffAccum (diffAccum)
 import Paraglider.Operator.DistinctUntilChanged (distinctUntilChanged, distinctUntilChangedBy, distinctUntilChangedF)
 import Paraglider.Operator.FlatMap (flatMap)
 import Paraglider.Operator.FromAff (fromAff)
 import Paraglider.Operator.FromEffect (fromEffect)
+import Paraglider.Operator.InitialIfAsync (initialIfAsync)
+import Paraglider.Operator.Multiplex (demultiplex, multiplex)
 import Paraglider.Operator.Replay (replayRefCount)
 import Paraglider.Operator.SkipWhile (skipWhile)
 import Paraglider.Operator.StartingWith (startingWith)
@@ -69,6 +74,38 @@ main = launchAff_ $ runSpec [ consoleReporter ] do
       assertRef' tf.capturesRef
         [{n: 0, s: "a"}, {n: 1, s: "a"}, {n: 0, s: "a"}, {n: 1, s: "a"}, {n: 2, s: "a"}]
 
+  describe "multiplex" do
+    it "get back the same data when multiplex then demultiplex" $ liftEffect do
+      {event, push} <- create
+      t <- testSubscribe $ multiplex $ demultiplex event
+      let rec = { a: 1, b: "b"}
+      let rec2 = { a: 2, b: "b2"}
+      push rec
+      push rec2
+      assertRef' t.capturesRef [ rec, {a: 1, b: "b2"}, {a: 2, b: "b2"} ]
+
+  describe "diffAccum" do
+    it "should emit diffs of upstream" $ liftEffect do
+      {event, push} <- create
+      t <- testSubscribe $ diffAccum identity event
+      push [1,2]
+      push [1,2,3]
+      push [4,3]
+      let mkMap arr = Map.fromFoldable $ (\v -> Tuple v v) <$> arr
+      assertRef' t.capturesRef
+        [ {added: mkMap [1,2], removed: Map.empty, all: mkMap [1,2]}
+        , {added: mkMap [3], removed: Map.empty, all: mkMap [1,2,3]}
+        , {added: mkMap [4], removed: mkMap[1,2], all: mkMap [4,3]}
+        ]
+
+  describe "initialIfAsync" do
+    it "should add an initial emission if event is async" $ liftEffect do
+      {event, push} <- create
+      t <- testSubscribe $ initialIfAsync 1 event
+      t2 <- testSubscribe $ initialIfAsync 1 (pure 2)
+      push 2
+      assertRef' t.capturesRef [1, 2]
+      assertRef' t2.capturesRef [2]
 
   describe "takeWhile" do
     it "should stop upstream subscription after n" $ liftEffect do
