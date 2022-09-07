@@ -25,7 +25,7 @@
         "purescript-filterable": "^v5.0.0",
         "purescript-foldable-traversable": "^v6.0.0",
         "purescript-heterogeneous": "^v0.6.0",
-        "purescript-hyrule": "https://github.com/mikesol/purescript-hyrule.git#master",
+        "purescript-hyrule": "https://github.com/mikesol/purescript-hyrule.git#v2.2.0",
         "purescript-integers": "^v6.0.0",
         "purescript-js-timers": "^v6.1.0",
         "purescript-lists": "^v7.0.0",
