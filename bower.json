@@ -1,0 +1,41 @@
+{
+    "name": "purescript-hyrule-paraglider",
+    "license": [
+        "MIT"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/xvaldetaro/purescript-hyrule-paraglider"
+    },
+    "ignore": [
+        "**/.*",
+        "node_modules",
+        "bower_components",
+        "output"
+    ],
+    "dependencies": {
+        "purescript-aff": "^v7.0.0",
+        "purescript-arrays": "^v7.0.0",
+        "purescript-bifunctors": "^v6.0.0",
+        "purescript-control": "^v6.0.0",
+        "purescript-datetime": "^v6.0.0",
+        "purescript-effect": "^v4.0.0",
+        "purescript-either": "^v6.1.0",
+        "purescript-exceptions": "^v6.0.0",
+        "purescript-filterable": "^v5.0.0",
+        "purescript-foldable-traversable": "^v6.0.0",
+        "purescript-heterogeneous": "^v0.6.0",
+        "purescript-hyrule": "https://github.com/mikesol/purescript-hyrule.git#master",
+        "purescript-integers": "^v6.0.0",
+        "purescript-js-timers": "^v6.1.0",
+        "purescript-lists": "^v7.0.0",
+        "purescript-maybe": "^v6.0.0",
+        "purescript-now": "^v6.0.0",
+        "purescript-ordered-collections": "^v3.0.0",
+        "purescript-prelude": "^v6.0.0",
+        "purescript-record": "^v4.0.0",
+        "purescript-refs": "^v6.0.0",
+        "purescript-st": "^v6.0.0",
+        "purescript-tuples": "^v7.0.0"
+    }
+}
