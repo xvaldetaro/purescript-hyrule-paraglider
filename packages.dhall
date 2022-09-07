@@ -86,7 +86,7 @@ let overrides =
           , "web-file"
           , "web-html" ]
         , repo = "https://github.com/mikesol/purescript-hyrule.git"
-        , version = "master"
+        , version = "v2.2.0"
         }
       }
 
