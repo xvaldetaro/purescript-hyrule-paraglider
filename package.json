@@ -1,7 +1,7 @@
 {
   "name": "purescript-hyrule-paraglider",
   "version": "1.0.0",
-  "description": "Navigate Hyrule with Rx operators and Utils",
+  "description": "Navigate Hyrule with more Operators and Utils",
   "main": "index.js",
   "scripts": {
     "test": "spago -x test/test.dhall test"

@@ -37,4 +37,6 @@ to generate this file without the comments in this block.
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs" ]
+, license = "MIT"
+, repository = "https://github.com/xvaldetaro/purescript-hyrule-paraglider"
 }

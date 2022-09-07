@@ -9,7 +9,7 @@ import FRP.Event (Event, makeEvent, makeLemmingEvent, subscribe)
 
 -- | Calls `work` on every emission. `work` is a callback that receives the emitted a as argument. `work`'s return is an Effectful computation
 mapEffectful :: ∀ a b. (a -> Effect b) -> Event a -> Event b
-mapEffectful  work upstream = makeEvent \downstreamPush -> do
+mapEffectful work upstream = makeEvent \downstreamPush -> do
   subscribe upstream \a -> do
     b <- work a
     downstreamPush b
